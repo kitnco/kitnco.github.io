@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Prototype E — Real Plan (Pfitzinger)</title>
+<style>
+  :root{
+    --bg:#1A1C20;
+    --panel:#222529;
+    --line:#3A3E45;
+    --ink:#F4F5F7;
+    --sub:#ABB1BA;
+    --accent:#5EE6A8;
+    --accent-ink:#0B1410;
+    --tempo:#4A3A24;
+    --interval:#3A2E52;
+    --rest:#2A2D32;
+    --recovery:#262B30;
+    --mp:#2F3A2A;
+    --race:#4A2828;
+    --neutral:#26292E;
+    --tile-border:#40444B;
+  }
+  body.light{
+    --bg:#F6F5F2;
+    --panel:#FFFFFF;
+    --line:#DEDBD3;
+    --ink:#1C1C1A;
+    --sub:#6B6E73;
+    --accent:#1F8F5E;
+    --accent-ink:#FFFFFF;
+    --tempo:#F3E6D2;
+    --interval:#E8E1F2;
+    --rest:#EDEBE5;
+    --recovery:#F1F0EC;
+    --mp:#E3EEDD;
+    --race:#F4DCDA;
+    --neutral:#FFFFFF;
+    --tile-border:#E1DED6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;
+    transition:background .2s, color .2s;
+  }
+
+  .topbar{
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    padding:18px 28px;
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:22px;
+  }
+  .brand{margin-right:auto;}
+  .brand h1{font-size:18px;margin:0;font-weight:700;}
+  .brand .sub{font-size:13px;color:var(--sub);margin-top:3px;}
+
+  .pagenav{display:flex;gap:4px;}
+  .pagenav a{
+    font-size:13px;font-weight:700;text-decoration:none;color:var(--sub);
+    padding:7px 12px;border-radius:8px;
+  }
+  .pagenav a:hover{color:var(--ink);background:var(--bg);}
+  .pagenav a.active{color:var(--accent-ink);background:var(--accent);}
+
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+  select, input[type=date]{
+    font-family:inherit;font-size:14px;background:var(--bg);color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:7px 10px;
+  }
+
+  .stat{text-align:center;}
+  .stat .num{font-size:22px;font-weight:800;color:var(--accent);line-height:1;white-space:nowrap;}
+  .stat .lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600;}
+
+  .toggle-wrap{display:flex;align-items:center;gap:9px;}
+  .toggle-wrap label{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;font-weight:600;white-space:nowrap;}
+  .switch{
+    position:relative;width:42px;height:23px;background:var(--bg);border:1px solid var(--line);
+    border-radius:12px;cursor:pointer;flex-shrink:0;
+  }
+  .switch .knob{
+    position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+    background:var(--sub);transition:left .15s, background .15s;
+  }
+  .switch.on{background:#1F3A30;border-color:var(--accent);}
+  .switch.on .knob{left:21px;background:var(--accent);}
+  body.light .switch.on{background:#D5F0E2;}
+
+  .legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;max-width:360px;}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sub);font-weight:600;white-space:nowrap;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .legend.disabled{opacity:.3;}
+
+  .main{padding:28px 28px 70px;overflow-x:auto;}
+  .main h2{font-size:20px;margin:0 0 4px;font-weight:700;}
+  .main .planmeta{font-size:12.5px;color:var(--sub);margin:0 0 20px;}
+
+  table{border-collapse:separate;border-spacing:8px;width:auto;}
+  td{padding:0;}
+  th{
+    font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;
+    text-align:left;padding:0 4px 8px;font-weight:700;
+  }
+  th.week-col{width:132px;}
+
+  td.week-col{
+    background:var(--panel);border-radius:12px;text-align:center;vertical-align:middle;
+    width:132px;border:1px solid var(--line);padding:0 6px;
+  }
+  .week-num{font-size:19px;display:block;color:var(--ink);font-weight:800;white-space:nowrap;}
+  .week-range{font-size:11px;color:var(--sub);display:block;margin-top:3px;font-weight:600;white-space:nowrap;}
+  .week-total{font-size:13px;color:var(--accent);display:block;margin-top:6px;font-weight:800;white-space:nowrap;}
+
+  .day-cell{
+    background:var(--neutral);
+    border-radius:12px;
+    border:1.5px solid var(--tile-border);
+    padding:11px 12px;
+    width:128px;
+    height:112px;
+    cursor:grab;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    overflow:hidden;
+  }
+  .day-cell.over{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset;}
+  .day-cell.dragging{opacity:.35;}
+  .day-cell.blank{
+    background:transparent;border:1.5px dashed var(--line);cursor:default;
+    opacity:.4;
+  }
+
+  .day-cell select.type-select{
+    background:transparent;border:none;color:var(--sub);
+    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+    padding:0;width:100%;cursor:pointer;
+  }
+  .day-cell select.type-select:focus{outline:none;color:var(--ink);}
+
+  .dist-row{display:flex;align-items:baseline;gap:4px;}
+  .dist-input{
+    background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);
+    font-size:18px;font-weight:700;width:58px;padding:0 0 1px;
+  }
+  .dist-input:focus{outline:none;border-bottom:1px solid var(--accent);}
+  .dist-input::placeholder{color:var(--sub);font-weight:600;}
+  .dist-unit{font-size:11px;color:var(--sub);font-weight:600;}
+  .time-flag{font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase;}
+
+  .note-input{
+    background:transparent;border:none;color:var(--sub);font-size:11px;
+    padding:0;width:100%;flex:1;font-weight:500;line-height:1.3;
+    resize:none;font-family:inherit;
+  }
+  .note-input:focus{outline:none;color:var(--ink);}
+  .note-input::placeholder{color:var(--sub);opacity:.6;}
+
+  body.colorcode .type-Recovery{background:var(--recovery);}
+  body.colorcode .type-Easy{}
+  body.colorcode .type-Long{border-color:var(--accent);}
+  body.colorcode .type-Long select.type-select{color:var(--accent);}
+  body.colorcode .type-Tempo{background:var(--tempo);}
+  body.colorcode .type-Intervals{background:var(--interval);}
+  body.colorcode .type-MP{background:var(--mp);}
+  body.colorcode .type-Rest{background:var(--rest);opacity:.75;}
+  body.colorcode .type-Race{background:var(--race);border-color:var(--accent);}
+
+  .hint{font-size:12px;color:var(--sub);margin-top:18px;line-height:1.5;}
+</style>
+</head>
+<body class="light">
+
+<div class="topbar">
+  <div class="brand">
+    <h1>Run Plan</h1>
+    <div class="sub" id="raceInfo">—</div>
+  </div>
+
+  <nav class="pagenav">
+    <a href="index.html">Library</a>
+    <a href="calendar.html" class="active">Calendar</a>
+  </nav>
+
+  <div class="field">
+    <label>Plan</label>
+    <select id="planSelect"></select>
+  </div>
+
+  <div class="field">
+    <label>Race date</label>
+    <input type="date" id="raceDate">
+  </div>
+
+  <div class="stat">
+    <div class="num" id="totalMiles">0</div>
+    <div class="lbl">total plan miles</div>
+  </div>
+
+  <div class="toggle-wrap">
+    <label>Color by type</label>
+    <div class="switch" id="colorToggle"><div class="knob"></div></div>
+  </div>
+
+  <div class="legend disabled" id="legend">
+    <div class="item"><span class="dot" style="background:var(--accent)"></span>Long</div>
+    <div class="item"><span class="dot" style="background:#C99A5B"></span>Tempo</div>
+    <div class="item"><span class="dot" style="background:#9A7FD6"></span>Intervals</div>
+    <div class="item"><span class="dot" style="background:#7DA86B"></span>MP</div>
+    <div class="item"><span class="dot" style="background:#80858c"></span>Rest</div>
+    <div class="item"><span class="dot" style="background:#D66"></span>Race</div>
+  </div>
+
+  <div class="toggle-wrap">
+    <label id="modeLabel">Light mode</label>
+    <div class="switch" id="modeToggle"><div class="knob"></div></div>
+  </div>
+</div>
+
+<div class="main">
+  <h2 id="planTitle">—</h2>
+  <div class="planmeta" id="planMeta"></div>
+  <table>
+    <thead>
+      <tr id="headerRow"><th class="week-col">Week</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+    </thead>
+    <tbody id="grid"></tbody>
+  </table>
+  <div class="hint">Monday is always the first column. If your race date isn\'t a Sunday, the plan shifts to end exactly on race day &mdash; any leftover days at the start or end of a calendar week show as empty, dashed placeholders rather than a workout tile. Drag a tile to swap days &middot; edit type, distance, or note directly on the tile &middot; distance accepts a single number, a range like "4-6", or a time like "30 min" (time-based entries aren\'t added to mileage totals).</div>
+</div>
+
+<script>
+// ---- Real plan data, converted from the uploaded Pfitzinger YAML ----
+const PFITZ_SCHEDULE = [{"workouts": [{"title": "Rest or cross-train"}, {"title": "LT {8-9:13-14} with 20\u201325 minutes at LT pace", "distance": [8.0, 9.0]}, {"title": "Med-long run {11-12:18-19}", "distance": [11.0, 12.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Med-long run {13-15:21-24}", "distance": [13.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {7-9:11-14} with 6 \u00d7 10 sec hill sprints + 8 \u00d7 100 m strides", "distance": [7.0, 9.0]}, {"title": "Med-long run {11-13:18-21}", "distance": [11.0, 13.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Marathon-pace run {15-16:24-26} with {8:13} at marathon pace", "distance": [15.0, 16.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Med-long run {12-14:19-23}", "distance": [12.0, 14.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "LT {9-10:14-16} with 25-30 minutes at LT pace", "distance": [9.0, 10.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {8-9:13-14} with 6 \u00d7 10 sec hill sprints + 8 \u00d7 100 m strides", "distance": [8.0, 9.0]}, {"title": "Med-long run {13-15:21-24}", "distance": [13.0, 15.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {10-11:16-18}", "distance": [10.0, 11.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Long run {17-18:27-29}", "distance": [17.0, 18.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "LT {8-10:13-16} with 30\u201335 minutes at LT pace", "distance": [8.0, 10.0]}, {"title": "Med-long run {13-15:21-24}", "distance": [13.0, 15.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "Marathon-pace run {17-18:27-29} with {10:16} at marathon pace", "distance": [17.0, 18.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {8-9:13-14} with 10 \u00d7 100 m strides", "distance": [8.0, 9.0]}, {"title": "Med-long run {11-12:18-19}", "distance": [11.0, 12.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "LT {9-11:14-18} with 30\u201335 minutes at LT pace", "distance": [9.0, 11.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Gen-aerobic + speed {7-8:11-13} with 6 \u00d7 10 sec hill sprints + 10 \u00d7 100 m strides", "distance": [7.0, 8.0]}, {"title": "Long run {19-21:31-34}", "distance": [19.0, 21.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "LT {10-12:16-19} with 35\u201340 minutes at LT pace", "distance": [10.0, 12.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Long run {19-21:31-34}", "distance": [19.0, 21.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 \u00d7 100 m strides", "distance": [6.0, 7.0]}, {"title": "Marathon-pace run {18-19:29-31} with {12:19} at marathon pace", "distance": [18.0, 19.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "V\u0307O\u2082max {8-9:13-14} with 7 \u00d7 600 m at 5K race pace; jog 50%\u201390% interval time", "distance": [8.0, 9.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Gen-aerobic {10-11:16-18}", "distance": [10.0, 11.0]}, {"title": "Recovery + speed {6-7:10-11} with 8 x 10 sec hill sprints + 8 x 100 m strides", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "LT {11-12:18-19} with 35\u201345 minutes at LT pace", "distance": [11.0, 12.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Long run {21-22:34-35}", "distance": [21.0, 22.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {10-11:16-18}", "distance": [10.0, 11.0]}, {"title": "V\u0307O\u2082max {10-11:16-18} with 5 \u00d7 600 m at 5K race pace; jog 50%\u201390% interval time", "distance": [10.0, 11.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 \u00d7 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "8K\u201315K tune-up race (total {10-14:16-23})", "distance": [10.0, 14.0]}, {"title": "Long run {16-17:26-27}", "distance": [16.0, 17.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "V\u0307O\u2082max {10-12:16-19} with 6 \u00d7 1 km at 5K race pace; jog 50%\u201390% interval time", "distance": [10.0, 12.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery {5-7:8-11}", "distance": [5.0, 7.0]}, {"title": "Marathon-pace run {19-20:31-32} with {14:23} at marathon pace", "distance": [19.0, 20.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "V\u0307O\u2082max {9-10:14-16} with 5 \u00d7 600 m at 5K race pace; jog 50%\u201390% interval time", "distance": [9.0, 10.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 \u00d7 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "8K\u201315K tune-up race (total {10-14:16-23})", "distance": [10.0, 14.0]}, {"title": "Long run {16-17:26-27}", "distance": [16.0, 17.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "V\u0307O\u2082max {11-12:18-19} with 6 \u00d7 1 km at 5K race pace; jog 50%\u201390% interval time", "distance": [11.0, 12.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Gen-aerobic + speed {8-9:13-14} with 8 \u00d7 100 m strides", "distance": [8.0, 9.0]}, {"title": "Recovery {5-7:8-11}", "distance": [5.0, 7.0]}, {"title": "Long run {19-21:31-34}", "distance": [19.0, 21.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {7-8:11-13} with 6 x 10 sec hill sprints + 12 x 100 m strides", "distance": [7.0, 8.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 x 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "8K-10K tune-up race (total {10-12:16-19})", "distance": [10.0, 12.0]}, {"title": "Long run {16-17:26-27}", "distance": [16.0, 17.0]}]}, {"workouts": [{"title": "Rest"}, {"title": "Recovery + speed {6-7:10-11} with 8 x 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "VO\u2082max {8-9:13-14} with 5 x 1 km at 5K race pace; jog 50%-90% interval time", "distance": [8.0, 9.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "Recovery + speed {5-6:8-10} with 8 x 100 m strides", "distance": [5.0, 6.0]}, {"title": "Med-long run {12-13:19-21}", "distance": [12.0, 13.0]}]}, {"workouts": [{"title": "Rest"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Dress rehearsal {6-7:10-11} with {2:3} at marathon pace", "distance": [6.0, 7.0]}, {"title": "Recovery {3-4:5-6}", "distance": [3.0, 4.0]}, {"title": "Recovery + speed {4-5:6-8} with 6 x 100 m strides", "distance": [4.0, 5.0]}, {"title": "Recovery {2-4:3-6}", "distance": [2.0, 4.0]}, {"title": "Goal Marathon", "distance": 26.2}]}];
+
+const PFITZ_META = {
+  name: "Pfitzinger/Douglas: 55–70 Miles per Week",
+  raceDistance: "Marathon",
+  source: "Advanced Marathoning (4th ed.), Pfitzinger & Douglas"
+};
+
+// classify a workout title into a coarse type for the dropdown / color coding
+function classifyType(title){
+  const t = title.toLowerCase();
+  if(t.includes("goal marathon") || t.includes("tune-up race")) return "Race";
+  if(t.includes("rest")) return "Rest";
+  if(t.includes("marathon-pace")) return "MP";
+  if(t.includes("long run") || t.includes("med-long")) return "Long";
+  if(t.includes("recovery")) return "Recovery";
+  if(t.includes(" lt ") || t.startsWith("lt ") || t.includes("lt{") || t.includes("lt ")) return "Tempo";
+  if(t.includes("vo\u2082max") || t.includes("vo2max") || t.includes("v\u0307o\u2082max")) return "Intervals";
+  if(t.includes("gen-aerobic")) return "Easy";
+  return "Easy";
+}
+
+// strip the embedded {mi:km} range annotations out of a title for a cleaner note
+function cleanTitle(title){
+  return title.replace(/\{[^}]*\}/g, "").replace(/\(\s*\)/g, "").replace(/\s{2,}/g, " ").trim();
+}
+
+// distance field may be a single number, a [min,max] array, or absent
+function distToString(dist){
+  if(dist == null) return "";
+  if(Array.isArray(dist)){
+    const lo = dist[0], hi = dist[1];
+    return lo === hi ? String(lo) : (lo + "-" + hi);
+  }
+  return String(dist);
+}
+
+function buildPfitzPlan(){
+  return {
+    name: PFITZ_META.name,
+    raceDistance: PFITZ_META.raceDistance,
+    source: PFITZ_META.source,
+    weeks: PFITZ_SCHEDULE.map(week => ({
+      days: week.workouts.map(w => ({
+        type: classifyType(w.title),
+        dist: distToString(w.distance),
+        note: cleanTitle(w.title),
+        fullTitle: w.title
+      }))
+    }))
+  };
+}
+
+// ---- A couple of lightweight synthetic plans for comparison ----
+function buildSyntheticPlan(key){
+  if(key === "half-12wk-intermediate"){
+    return {
+      name: "Half Marathon — 12 Week Intermediate",
+      raceDistance: "Half Marathon",
+      weeks: Array.from({length:12}, (_,w)=>{
+        const wk=w+1; const taper=wk>=10;
+        return {days:[
+          {type:"Rest", dist:"0", note:""},
+          {type:"Easy", dist: taper?"3":"4-5", note:""},
+          {type:"Tempo", dist: taper?"3":"5", note:"comfortably hard"},
+          {type:"Easy", dist:"3", note:""},
+          {type:"Rest", dist:"0", note:""},
+          {type:"Intervals", dist: taper?"3":"4", note:"6x800m"},
+          {type:wk===12?"Race":"Long", dist: wk===12?"13.1":(String(6+wk*0.8>16?16:Math.round((6+wk*0.8)))), note:wk===12?"RACE DAY":""}
+        ]};
+      })
+    };
+  }
+  if(key === "5k-8wk"){
+    return {
+      name: "5K — 8 Week Sharpening",
+      raceDistance: "5K",
+      weeks: Array.from({length:8}, (_,w)=>{
+        const wk=w+1;
+        return {days:[
+          {type:"Rest", dist:"0", note:""},
+          {type:"Easy", dist:"3", note:""},
+          {type:"Intervals", dist:"3", note:"5x400m"},
+          {type:"Easy", dist:"3", note:""},
+          {type:"Rest", dist:"0", note:""},
+          {type:"Tempo", dist:"20 min", note:""},
+          {type:wk===8?"Race":"Long", dist:wk===8?"3.1":"5", note:wk===8?"RACE DAY":""}
+        ]};
+      })
+    };
+  }
+}
+
+const PLAN_BUILDERS = {
+  "pfitz-18wk-55to70": buildPfitzPlan,
+  "half-12wk-intermediate": ()=>buildSyntheticPlan("half-12wk-intermediate"),
+  "5k-8wk": ()=>buildSyntheticPlan("5k-8wk")
+};
+const PLAN_LABELS = {
+  "pfitz-18wk-55to70": "Marathon — Pfitzinger 18wk (55\u201370 mi/wk)",
+  "half-12wk-intermediate": "Half Marathon — 12 Week Intermediate",
+  "5k-8wk": "5K — 8 Week Sharpening"
+};
+
+const TYPES = ["Rest","Recovery","Easy","Tempo","Intervals","MP","Long","Race"];
+
+let currentPlanKey = "pfitz-18wk-55to70";
+let planData = null;
+let raceDate = null;
+let colorCodeOn = false;
+let flatArray = []; // rebuilt each render; flatArray[i] is a reference to the live day object
+
+function setupControls(){
+  const sel = document.getElementById("planSelect");
+  Object.entries(PLAN_LABELS).forEach(([k,label])=>{
+    const opt = document.createElement("option");
+    opt.value = k; opt.textContent = label;
+    sel.appendChild(opt);
+  });
+  sel.value = currentPlanKey;
+  sel.addEventListener("change", e=>loadPlan(e.target.value));
+
+  const dateInput = document.getElementById("raceDate");
+  const d = new Date(); d.setDate(d.getDate() + 126);
+  dateInput.value = d.toISOString().slice(0,10);
+  raceDate = dateInput.value;
+  dateInput.addEventListener("change", e=>{ raceDate = e.target.value; render(); });
+
+  const toggle = document.getElementById("colorToggle");
+  toggle.addEventListener("click", ()=>{
+    colorCodeOn = !colorCodeOn;
+    toggle.classList.toggle("on", colorCodeOn);
+    document.body.classList.toggle("colorcode", colorCodeOn);
+    document.getElementById("legend").classList.toggle("disabled", !colorCodeOn);
+  });
+
+  const modeToggle = document.getElementById("modeToggle");
+  modeToggle.addEventListener("click", ()=>{
+    const isDark = modeToggle.classList.toggle("on");
+    document.body.classList.toggle("light", !isDark);
+    document.getElementById("modeLabel").textContent = isDark ? "Dark mode" : "Light mode";
+  });
+}
+
+function loadPlan(key){
+  currentPlanKey = key;
+  planData = PLAN_BUILDERS[key]();
+  render();
+}
+
+// parses a distance field that may be a plain number, a range ("4-6"),
+// or a time-based entry ("30 min", "45:00")
+function parseDist(raw){
+  const str = (raw==null?"":String(raw)).trim();
+  if(str==="") return {total:0, isTime:false};
+  if(/min|hr|:/i.test(str)) return {total:0, isTime:true};
+  const rangeMatch = str.match(/^(\d+(\.\d+)?)\s*[-\u2013]\s*(\d+(\.\d+)?)$/);
+  if(rangeMatch){
+    const min=parseFloat(rangeMatch[1]), max=parseFloat(rangeMatch[3]);
+    return {total:(min+max)/2, isTime:false, isRange:true};
+  }
+  const n = parseFloat(str);
+  return {total: isNaN(n)?0:n, isTime:false};
+}
+
+function fmt(d){return (d.getMonth()+1)+"/"+d.getDate();}
+
+// Flattens the plan's weeks into one chronological sequence (oldest first),
+// anchors the LAST entry on the race date, and walks backward day-by-day.
+function flattenWithDates(){
+  const flat = [];
+  planData.weeks.forEach(week => week.days.forEach(d => flat.push(d)));
+  const N = flat.length;
+  const race = new Date(raceDate + "T00:00:00");
+  const items = flat.map((day, i) => {
+    const date = new Date(race);
+    date.setDate(race.getDate() - (N - 1 - i));
+    return {day, date};
+  });
+  return items;
+}
+
+// Groups the flattened, dated items into Monday-anchored calendar weeks.
+// Days with no plan item land as null (rendered as a blank placeholder).
+function buildCalendarRows(items){
+  const rowsByKey = new Map();
+  items.forEach(item => {
+    const dow = item.date.getDay(); // 0=Sun..6=Sat
+    const col = (dow + 6) % 7; // 0=Mon..6=Sun
+    const weekStart = new Date(item.date);
+    weekStart.setDate(item.date.getDate() - col);
+    const key = weekStart.toISOString().slice(0,10);
+    if(!rowsByKey.has(key)){
+      rowsByKey.set(key, {weekStart, slots: new Array(7).fill(null)});
+    }
+    rowsByKey.get(key).slots[col] = item;
+  });
+  return Array.from(rowsByKey.values()).sort((a,b)=> a.weekStart - b.weekStart);
+}
+
+function rowMileage(row){
+  return row.slots.reduce((s,slot)=> s + (slot ? parseDist(slot.day.dist).total : 0), 0);
+}
+
+function updateTotalsOnly(rows){
+  document.getElementById("totalMiles").textContent =
+    rows.reduce((s,r)=>s+rowMileage(r),0).toFixed(1);
+  document.querySelectorAll(".week-total").forEach((el,i)=>{
+    el.textContent = rowMileage(rows[i]).toFixed(1) + " mi";
+  });
+}
+
+function render(){
+  document.getElementById("raceInfo").textContent = planData.raceDistance + " \u00b7 " + raceDate;
+  document.getElementById("planTitle").textContent = planData.name;
+  document.getElementById("planMeta").textContent = planData.source ? ("Source: " + planData.source) : "";
+
+  const items = flattenWithDates();
+  const rows = buildCalendarRows(items);
+
+  document.getElementById("totalMiles").textContent =
+    rows.reduce((s,r)=>s+rowMileage(r),0).toFixed(1);
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  rows.forEach((row, wi) => {
+    const tr = document.createElement("tr");
+    const wkTd = document.createElement("td"); wkTd.className = "week-col";
+    const wkEnd = new Date(row.weekStart); wkEnd.setDate(row.weekStart.getDate()+6);
+    wkTd.innerHTML = `<span class="week-num">W${wi+1}</span><span class="week-range">${fmt(row.weekStart)}\u2013${fmt(wkEnd)}</span><span class="week-total">${rowMileage(row).toFixed(1)} mi</span>`;
+    tr.appendChild(wkTd);
+
+    row.slots.forEach((slot, di) => {
+      const td = document.createElement("td");
+
+      if(!slot){
+        const blank = document.createElement("div");
+        blank.className = "day-cell blank";
+        td.appendChild(blank);
+        tr.appendChild(td);
+        return;
+      }
+
+      const day = slot.day;
+      const cell = document.createElement("div");
+      cell.className = "day-cell type-" + day.type;
+      cell.draggable = true;
+      if(day.fullTitle) cell.title = day.fullTitle;
+
+      const typeSelect = document.createElement("select");
+      typeSelect.className = "type-select";
+      TYPES.forEach(t=>{
+        const o = document.createElement("option"); o.value=t; o.textContent=t;
+        if(t===day.type) o.selected = true;
+        typeSelect.appendChild(o);
+      });
+      typeSelect.addEventListener("change", ()=>{
+        day.type = typeSelect.value;
+        cell.className = "day-cell type-" + day.type;
+      });
+      typeSelect.addEventListener("mousedown", e=>e.stopPropagation());
+
+      const distRow = document.createElement("div"); distRow.className = "dist-row";
+      const distInput = document.createElement("input");
+      distInput.type = "text"; distInput.className = "dist-input";
+      distInput.value = day.dist || "";
+      distInput.placeholder = "0";
+      distInput.addEventListener("mousedown", e=>e.stopPropagation());
+      distInput.addEventListener("input", ()=>{
+        day.dist = distInput.value;
+        updateTotalsOnly(rows);
+        timeFlag.style.display = parseDist(day.dist).isTime ? "inline" : "none";
+      });
+      const unit = document.createElement("span"); unit.className = "dist-unit"; unit.textContent = "mi";
+      const timeFlag = document.createElement("span"); timeFlag.className = "time-flag"; timeFlag.textContent = "time";
+      timeFlag.style.display = parseDist(day.dist).isTime ? "inline" : "none";
+      distRow.appendChild(distInput); distRow.appendChild(unit); distRow.appendChild(timeFlag);
+
+      const noteInput = document.createElement("textarea");
+      noteInput.className = "note-input"; noteInput.rows = 2;
+      noteInput.value = day.note || ""; noteInput.placeholder = "note";
+      noteInput.addEventListener("mousedown", e=>e.stopPropagation());
+      noteInput.addEventListener("input", ()=>{ day.note = noteInput.value; });
+
+      cell.appendChild(typeSelect);
+      cell.appendChild(distRow);
+      cell.appendChild(noteInput);
+
+      cell.addEventListener("dragstart", e=>{
+        cell.classList.add("dragging");
+        e.dataTransfer.setData("text/plain", String(di + "_" + wi));
+        e.dataTransfer.setData("application/x-day-ref", JSON.stringify({wi, di}));
+      });
+      cell.addEventListener("dragend", ()=>cell.classList.remove("dragging"));
+      cell.addEventListener("dragover", e=>{e.preventDefault(); cell.classList.add("over");});
+      cell.addEventListener("dragleave", ()=>cell.classList.remove("over"));
+      cell.addEventListener("drop", e=>{
+        e.preventDefault(); cell.classList.remove("over");
+        const src = JSON.parse(e.dataTransfer.getData("application/x-day-ref"));
+        const srcSlot = rows[src.wi].slots[src.di];
+        if(!srcSlot) return; // can't drag from a blank cell
+        const a = srcSlot.day, b = day;
+        const tmp = {type:a.type, dist:a.dist, note:a.note};
+        a.type=b.type; a.dist=b.dist; a.note=b.note;
+        b.type=tmp.type; b.dist=tmp.dist; b.note=tmp.note;
+        render();
+      });
+
+      td.appendChild(cell);
+      tr.appendChild(td);
+    });
+    grid.appendChild(tr);
+  });
+}
+
+setupControls();
+loadPlan(currentPlanKey);
+</script>
+</body>
+</html>
