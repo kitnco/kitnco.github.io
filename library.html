@@ -180,7 +180,7 @@ body.dark .btn-use{color:#0B1410;}
 .detail-section{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--sub);margin:18px 0 8px;}
 
 /* Bar chart */
-.chart-svg{width:100%;height:148px;overflow:visible;}
+.chart-svg{width:100%;max-width:620px;height:auto;overflow:visible;display:block;}
 .chart-svg .gridline{stroke:var(--line);stroke-width:1;}
 .chart-svg .axis-label{font-size:9.5px;fill:var(--sub);font-family:inherit;}
 .chart-svg .x-label{font-size:9.5px;fill:var(--sub);font-family:inherit;text-anchor:middle;}
@@ -437,7 +437,7 @@ function buildBarChart(plan) {
   for(let i=0;i<n;i+=lStep) xLabels += `<text class="x-label" x="${xFor(i)}" y="${h-2}">${i+1}</text>`;
   if((n-1)%lStep!==0) xLabels += `<text class="x-label" x="${xFor(n-1)}" y="${h-2}">${n}</text>`;
 
-  return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${gridlines}${bars}${labels}${xLabels}</svg>`;
+  return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" >${gridlines}${bars}${labels}${xLabels}</svg>`;
 }
 
 function buildSchedulePreview(plan) {

@@ -18,8 +18,8 @@
   --week-border:#C0BAB0;
   --week-bg:#F2F0EB;
   /* color buckets - light mode */
-  --c-rest:#E5E8F0;
-  --c-recovery:#E8E7E5;
+  --c-rest:#E8E7E5;
+  --c-recovery:#E5E8F0;
   --c-easy:#E5F0E8;
   --c-lt:#FDFACC;
   --c-mp:#D8F0E3;
@@ -38,8 +38,8 @@ body.dark{
   --tile-border:#38404A;
   --week-border:#4A5260;
   --week-bg:#1A1D22;
-  --c-rest:#1E2530;
-  --c-recovery:#27292C;
+  --c-rest:#27292C;
+  --c-recovery:#1E2530;
   --c-easy:#1A2E22;
   --c-lt:#2E2A00;
   --c-mp:#0C1F14;
@@ -117,11 +117,11 @@ table{border-collapse:separate;border-spacing:7px;width:auto;}
 td{padding:0;}
 th{font-size:10.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;
   padding:0 4px 7px;font-weight:700;text-align:left;}
-th.week-th{width:130px;}
+th.week-th{width:140px;}
 
 /* Week tile — backwards L (right + bottom border only) */
 td.week-col{
-  width:130px;vertical-align:middle;text-align:center;padding:10px 8px;
+  width:140px;vertical-align:middle;text-align:center;padding:10px 10px;
   background:var(--week-bg);
   border-top:none;border-left:none;
   border-right:2.5px solid var(--week-border);
@@ -132,9 +132,9 @@ td.week-col.current-week{
   border-right-color:var(--ink);
   border-bottom-color:var(--ink);
 }
-.week-num{font-size:18px;font-weight:900;display:block;color:var(--ink);}
-.week-range{font-size:10.5px;color:var(--sub);display:block;margin-top:3px;font-weight:600;white-space:nowrap;}
-.week-total{font-size:13px;color:var(--accent);display:block;margin-top:5px;font-weight:800;white-space:nowrap;}
+.week-num{font-size:21px;font-weight:900;display:block;color:var(--ink);}
+.week-range{font-size:12px;color:var(--sub);display:block;margin-top:4px;font-weight:600;white-space:nowrap;}
+.week-total{font-size:15px;color:var(--accent);display:block;margin-top:6px;font-weight:800;white-space:nowrap;}
 
 /* Day tiles */
 .day-cell{
