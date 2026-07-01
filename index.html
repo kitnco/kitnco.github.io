@@ -18,17 +18,13 @@
   --week-border:#C0BAB0;
   --week-bg:#F2F0EB;
   /* color buckets - light mode */
-  --c-rest:#EAEAEC;
-  --c-recovery:#F5E8D0;
+  --c-rest:#E5E8F0;
+  --c-recovery:#F8E0B0;
   --c-easy:#E5F0E8;
-  --c-medlong:#CCE5D2;
-  --c-long:#B8DCC0;
   --c-lt:#FAE8C8;
   --c-mp:#D0E8F5;
   --c-vo2:#EAD8F5;
   --c-race:#F5D8D8;
-  --c-cross:#E4E6EA;
-  --c-xtrain:#E4E6EA;
 }
 body.dark{
   --bg:#15171A;
@@ -42,17 +38,13 @@ body.dark{
   --tile-border:#38404A;
   --week-border:#4A5260;
   --week-bg:#1A1D22;
-  --c-rest:#252B33;
-  --c-recovery:#3A2A1A;
+  --c-rest:#1E2530;
+  --c-recovery:#3D2608;
   --c-easy:#1A2E22;
-  --c-medlong:#162A1E;
-  --c-long:#0F2018;
   --c-lt:#3A2210;
   --c-mp:#142032;
   --c-vo2:#2A1A3A;
   --c-race:#3A1515;
-  --c-cross:#22272E;
-  --c-xtrain:#22272E;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;min-height:100vh;transition:background .2s,color .2s;}
@@ -79,11 +71,11 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,'SF Pro Tex
 body.dark .pagenav a.active{color:#0B1410;}
 
 /* sun/moon toggle */
-.mode-btn{
-  font-size:18px;line-height:1;background:none;border:none;cursor:pointer;
-  padding:4px 6px;border-radius:8px;transition:background .15s;flex-shrink:0;
-}
+.mode-btn{background:none;border:none;cursor:pointer;padding:5px 6px;border-radius:8px;transition:background .15s;flex-shrink:0;display:flex;align-items:center;color:var(--ink);}
 .mode-btn:hover{background:var(--accent-soft);}
+.icon-moon{display:none;}
+body.dark .icon-sun{display:none;}
+body.dark .icon-moon{display:block;}
 
 /* controls row */
 .field{display:flex;flex-direction:column;gap:3px;}
@@ -118,7 +110,7 @@ body.dark .unit-toggle button.on{color:#0B1410;}
 .legend .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 
 /* ── MAIN ── */
-.main{padding:20px 24px 40px;display:flex;justify-content:flex-start;overflow-x:auto;}
+.main{padding:20px 24px 40px;display:flex;justify-content:center;overflow-x:auto;}
 .grid-wrap{display:inline-block;}
 
 table{border-collapse:separate;border-spacing:7px;width:auto;}
@@ -167,16 +159,18 @@ td.week-col.current-week{
 }
 
 /* Color buckets (applied when body.colorcode) */
-body.colorcode .bucket-rest{background:var(--c-rest);}
-body.colorcode .bucket-recovery{background:var(--c-recovery);}
-body.colorcode .bucket-easy{background:var(--c-easy);}
-body.colorcode .bucket-medlong{background:var(--c-medlong);}
-body.colorcode .bucket-long{background:var(--c-long);}
+/* Color coding — Long/Med-long: border accent only (no background fill).
+   Tempo/MP/VO2/Race: subtle tint. Rest vs Recovery: clearly different tints. */
+body.colorcode .bucket-long{border-color:var(--accent);border-width:2px;}
+body.colorcode .bucket-long .tile-type{color:var(--accent);}
+body.colorcode .bucket-medlong{border-color:var(--accent);border-width:1.5px;opacity:.85;}
+body.colorcode .bucket-medlong .tile-type{color:var(--accent);}
 body.colorcode .bucket-lt{background:var(--c-lt);}
 body.colorcode .bucket-mp{background:var(--c-mp);}
 body.colorcode .bucket-vo2{background:var(--c-vo2);}
-body.colorcode .bucket-race{background:var(--c-race);}
-body.colorcode .bucket-cross,.bucket-xtrain{background:var(--c-cross);}
+body.colorcode .bucket-rest{background:var(--c-rest);opacity:.85;}
+body.colorcode .bucket-recovery{background:var(--c-recovery);}
+body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#c0392b);border-width:2px;}
 
 /* Tile text */
 .tile-type{
@@ -207,10 +201,25 @@ body.colorcode .bucket-cross,.bucket-xtrain{background:var(--c-cross);}
 
 /* responsive */
 @media(max-width:700px){
-  .topbar-r1,.topbar-r2{padding:10px 14px;}
-  .main{padding:14px 14px 40px;}
+  .topbar-r1{padding:10px 14px;}
+  .main{padding:14px 8px 40px;}
   .race-title{font-size:15px;}
+  .topbar-r2{display:none;padding:10px 14px;}
+  .topbar-r2.open{display:flex;}
+  .expand-btn{display:flex;}
 }
+@media(min-width:701px){
+  .expand-btn{display:none;}
+  .topbar-r2{display:flex!important;}
+}
+.expand-btn{
+  align-items:center;justify-content:center;
+  background:none;border:1px solid var(--line);border-radius:7px;
+  color:var(--sub);cursor:pointer;padding:4px 9px;font-size:11px;font-weight:700;
+  flex-shrink:0;gap:4px;
+}
+.expand-btn svg{transition:transform .2s;}
+.expand-btn.open svg{transform:rotate(180deg);}
 </style>
 </head>
 <body>
@@ -223,7 +232,18 @@ body.colorcode .bucket-cross,.bucket-xtrain{background:var(--c-cross);}
       <a href="index.html" class="active">Calendar</a>
       <a href="library.html">Library</a>
     </nav>
-    <button class="mode-btn" id="modeBtn" title="Toggle dark/light mode">☀️</button>
+    <button class="expand-btn" id="expandBtn" aria-label="Show controls"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="2,4 7,10 12,4"/></svg></button>
+    <button class="mode-btn" id="modeBtn" title="Toggle dark/light mode" aria-label="Toggle dark mode">
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="10" cy="10" r="3.4"/><line x1="10" y1="1.5" x2="10" y2="3.5"/><line x1="10" y1="16.5" x2="10" y2="18.5"/>
+        <line x1="1.5" y1="10" x2="3.5" y2="10"/><line x1="16.5" y1="10" x2="18.5" y2="10"/>
+        <line x1="4.1" y1="4.1" x2="5.6" y2="5.6"/><line x1="14.4" y1="14.4" x2="15.9" y2="15.9"/>
+        <line x1="15.9" y1="4.1" x2="14.4" y2="5.6"/><line x1="5.6" y1="14.4" x2="4.1" y2="15.9"/>
+      </svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 10.5a5.5 5.5 0 0 1-5.5-5.5 5.5 5.5 0 1 0 5.5 10.5 5.5 5.5 0 0 1 0-5z"/>
+      </svg>
+    </button>
   </div>
   <div class="topbar-r2">
     <div class="field">
@@ -692,9 +712,16 @@ function setup() {
   // Dark/light mode
   const modeBtn = document.getElementById('modeBtn');
   modeBtn.addEventListener('click', () => {
-    const isDark = document.body.classList.toggle('dark');
-    modeBtn.textContent = isDark ? '🌙' : '☀️';
+    document.body.classList.toggle('dark');
     buildLegend();
+  });
+
+  // Mobile expand toggle
+  const expandBtn = document.getElementById('expandBtn');
+  const r2 = document.querySelector('.topbar-r2');
+  expandBtn.addEventListener('click', () => {
+    const open = r2.classList.toggle('open');
+    expandBtn.classList.toggle('open', open);
   });
 
   loadPlan(currentPlanKey);
