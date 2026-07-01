@@ -2,3812 +2,705 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Plan Library</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stride — Run Plan</title>
 <style>
-  :root{
-    --bg:#1A1C20;
-    --panel:#222529;
-    --line:#3A3E45;
-    --ink:#F4F5F7;
-    --sub:#ABB1BA;
-    --accent:#5EE6A8;
-    --accent-ink:#0B1410;
-    --danger:#E0796B;
-    --row-hover:#272B30;
-  }
-  body.light{
-    --bg:#F6F5F2;
-    --panel:#FFFFFF;
-    --line:#DEDBD3;
-    --ink:#1C1C1A;
-    --sub:#6B6E73;
-    --accent:#1F8F5E;
-    --accent-ink:#FFFFFF;
-    --danger:#C2483A;
-    --row-hover:#F4F2EC;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;background:var(--bg);color:var(--ink);
-    font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;
-    transition:background .2s, color .2s;
-  }
+:root{
+  --bg:#F7F6F3;
+  --panel:#FFFFFF;
+  --line:#E2DED7;
+  --ink:#1C1C1A;
+  --sub:#6B6E73;
+  --accent:#1F8F5E;
+  --accent-soft:#E3F0E8;
+  --tile:#FFFFFF;
+  --tile-border:#D8D4CC;
+  --week-border:#C0BAB0;
+  --week-bg:#F2F0EB;
+  /* color buckets - light mode */
+  --c-rest:#EAEAEC;
+  --c-recovery:#F5E8D0;
+  --c-easy:#E5F0E8;
+  --c-medlong:#CCE5D2;
+  --c-long:#B8DCC0;
+  --c-lt:#FAE8C8;
+  --c-mp:#D0E8F5;
+  --c-vo2:#EAD8F5;
+  --c-race:#F5D8D8;
+  --c-cross:#E4E6EA;
+  --c-xtrain:#E4E6EA;
+}
+body.dark{
+  --bg:#15171A;
+  --panel:#1E2126;
+  --line:#2E333B;
+  --ink:#F0F2F5;
+  --sub:#8B919A;
+  --accent:#5EE6A8;
+  --accent-soft:#1A3028;
+  --tile:#222629;
+  --tile-border:#38404A;
+  --week-border:#4A5260;
+  --week-bg:#1A1D22;
+  --c-rest:#252B33;
+  --c-recovery:#3A2A1A;
+  --c-easy:#1A2E22;
+  --c-medlong:#162A1E;
+  --c-long:#0F2018;
+  --c-lt:#3A2210;
+  --c-mp:#142032;
+  --c-vo2:#2A1A3A;
+  --c-race:#3A1515;
+  --c-cross:#22272E;
+  --c-xtrain:#22272E;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;min-height:100vh;transition:background .2s,color .2s;}
 
-  .topbar{
-    background:var(--panel);
-    border-bottom:1px solid var(--line);
-    padding:18px 28px;
-    display:flex;
-    align-items:center;
-    gap:18px;
-  }
-  .brand{margin-right:auto;}
-  .brand h1{font-size:18px;margin:0;font-weight:700;}
-  .brand .sub{font-size:13px;color:var(--sub);margin-top:3px;}
+/* ── TOP BAR ── */
+.topbar{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;}
+.topbar-r1{display:flex;align-items:center;gap:14px;padding:14px 24px 10px;flex-wrap:nowrap;}
+.topbar-r2{display:flex;align-items:center;gap:14px;padding:8px 24px 12px;flex-wrap:wrap;border-top:1px solid var(--line);}
 
-  .pagenav{display:flex;gap:4px;}
-  .pagenav a{
-    font-size:13px;font-weight:700;text-decoration:none;color:var(--sub);
-    padding:7px 12px;border-radius:8px;
-  }
-  .pagenav a:hover{color:var(--ink);background:var(--row-hover);}
-  .pagenav a.active{color:var(--accent-ink);background:var(--accent);}
+/* race name editable */
+.race-title{
+  font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--ink);
+  border:none;background:transparent;outline:none;min-width:80px;max-width:280px;
+  padding:2px 4px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.race-title:focus{background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent);}
+.race-title:empty::before{content:attr(data-placeholder);color:var(--sub);font-weight:600;}
 
-  .search{
-    font-family:inherit;font-size:14px;background:var(--bg);color:var(--ink);
-    border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:220px;
-  }
-  select{
-    font-family:inherit;font-size:13px;background:var(--bg);color:var(--ink);
-    border:1px solid var(--line);border-radius:8px;padding:8px 10px;
-  }
+/* nav */
+.pagenav{display:flex;gap:3px;margin-left:auto;}
+.pagenav a{font-size:12.5px;font-weight:700;text-decoration:none;color:var(--sub);padding:6px 11px;border-radius:8px;}
+.pagenav a:hover{color:var(--ink);background:var(--accent-soft);}
+.pagenav a.active{color:#fff;background:var(--accent);}
+body.dark .pagenav a.active{color:#0B1410;}
 
-  .btn{
-    border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;
-    font-family:inherit;
-  }
-  .btn-primary{background:var(--accent);color:var(--accent-ink);}
-  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
-  .btn-text{background:transparent;color:var(--sub);border:none;padding:6px 10px;}
-  .btn-text:hover{color:var(--ink);}
-  .btn-danger-text{background:transparent;color:var(--danger);border:none;padding:6px 10px;}
+/* sun/moon toggle */
+.mode-btn{
+  font-size:18px;line-height:1;background:none;border:none;cursor:pointer;
+  padding:4px 6px;border-radius:8px;transition:background .15s;flex-shrink:0;
+}
+.mode-btn:hover{background:var(--accent-soft);}
 
-  .switch{
-    position:relative;width:42px;height:23px;background:var(--bg);border:1px solid var(--line);
-    border-radius:12px;cursor:pointer;flex-shrink:0;
-  }
-  .switch .knob{
-    position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
-    background:var(--sub);transition:left .15s, background .15s;
-  }
-  .switch.on{background:#1F3A30;border-color:var(--accent);}
-  .switch.on .knob{left:21px;background:var(--accent);}
-  body.light .switch.on{background:#D5F0E2;}
+/* controls row */
+.field{display:flex;flex-direction:column;gap:3px;}
+.field label{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;font-weight:700;}
+select,input[type=date]{
+  font-family:inherit;font-size:13px;background:var(--bg);color:var(--ink);
+  border:1px solid var(--line);border-radius:7px;padding:6px 9px;
+}
+.stat{text-align:right;}
+.stat .num{font-size:20px;font-weight:900;color:var(--accent);line-height:1;white-space:nowrap;}
+.stat .lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:2px;}
 
-  .main{max-width:880px;margin:0 auto;padding:30px 28px 90px;}
+/* unit toggle */
+.unit-toggle{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;height:32px;}
+.unit-toggle button{
+  font-family:inherit;font-size:12px;font-weight:700;padding:0 10px;border:none;
+  background:transparent;color:var(--sub);cursor:pointer;
+}
+.unit-toggle button.on{background:var(--accent);color:#fff;}
+body.dark .unit-toggle button.on{color:#0B1410;}
 
-  .group{margin-bottom:34px;}
-  .group-head{
-    display:flex;align-items:baseline;gap:10px;
-    margin-bottom:6px;padding-bottom:8px;border-bottom:1px solid var(--line);
-  }
-  .group-head.draggable{cursor:grab;}
-  .group-head.draggable:active{cursor:grabbing;}
-  .group-head.dragging{opacity:.4;}
-  .group-head.drag-over{border-bottom-color:var(--accent);}
-  .group-head .grip{
-    color:var(--sub);font-size:13px;letter-spacing:-1px;user-select:none;flex-shrink:0;
-  }
-  .group-head h2{
-    font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--sub);
-    margin:0;font-weight:800;
-  }
-  .group-head .count{font-size:11px;color:var(--sub);}
+/* color toggle */
+.color-section{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.color-section label{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;font-weight:700;}
+.switch{position:relative;width:38px;height:21px;background:var(--bg);border:1px solid var(--line);border-radius:11px;cursor:pointer;flex-shrink:0;}
+.switch .knob{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--sub);transition:left .15s,background .15s;}
+.switch.on{background:var(--accent-soft);border-color:var(--accent);}
+.switch.on .knob{left:19px;background:var(--accent);}
+.legend{display:flex;gap:10px;flex-wrap:wrap;opacity:.35;transition:opacity .2s;}
+.legend.active{opacity:1;}
+.legend .item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--sub);font-weight:600;white-space:nowrap;}
+.legend .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 
-  .row{
-    display:flex;align-items:center;gap:16px;
-    padding:14px 10px;
-    border-bottom:1px solid var(--line);
-    cursor:pointer;
-  }
-  .row:hover{background:var(--row-hover);}
-  .row:last-child{border-bottom:none;}
-  .row.expanded{background:var(--row-hover);}
-  .row .chevron{
-    width:14px;flex-shrink:0;color:var(--sub);font-size:11px;
-    transition:transform .15s;
-  }
-  .row.expanded .chevron{transform:rotate(90deg);}
+/* ── MAIN ── */
+.main{padding:20px 24px 40px;display:flex;justify-content:flex-start;overflow-x:auto;}
+.grid-wrap{display:inline-block;}
 
-  .detail{
-    padding:18px 18px 22px 40px;
-    border-bottom:1px solid var(--line);
-    background:var(--row-hover);
-  }
-  .detail-stats{display:flex;gap:28px;margin-bottom:16px;flex-wrap:wrap;}
-  .detail-stat .num{font-size:18px;font-weight:800;color:var(--ink);}
-  .detail-stat.peak .num{color:var(--accent);}
-  .detail-stat .lbl{font-size:10.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-top:2px;}
+table{border-collapse:separate;border-spacing:7px;width:auto;}
+td{padding:0;}
+th{font-size:10.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;
+  padding:0 4px 7px;font-weight:700;text-align:left;}
+th.week-th{width:130px;}
 
-  .chart-wrap{display:flex;gap:8px;margin-bottom:6px;}
-  .chart-svg{width:100%;height:164px;overflow:visible;}
-  .chart-svg .gridline{stroke:var(--line);stroke-width:1;}
-  .chart-svg .axis-label{font-size:9.5px;fill:var(--sub);font-family:inherit;}
-  .chart-svg .x-label{font-size:9.5px;fill:var(--sub);font-family:inherit;text-anchor:middle;}
-  .chart-svg .plot-bar{fill:var(--accent);opacity:.9;}
-  .chart-svg .plot-bar.taper{fill:var(--sub);}
-  .chart-svg .value-label{font-size:9.5px;fill:var(--ink);font-weight:700;text-anchor:middle;font-family:inherit;}
-  .chart-svg .value-label.inside{fill:var(--accent-ink);}
+/* Week tile — backwards L (right + bottom border only) */
+td.week-col{
+  width:130px;vertical-align:middle;text-align:center;padding:10px 8px;
+  background:var(--week-bg);
+  border-top:none;border-left:none;
+  border-right:2.5px solid var(--week-border);
+  border-bottom:2.5px solid var(--week-border);
+  border-radius:0 0 4px 0;
+}
+td.week-col.current-week{
+  border-right-color:var(--ink);
+  border-bottom-color:var(--ink);
+}
+.week-num{font-size:18px;font-weight:900;display:block;color:var(--ink);}
+.week-range{font-size:10.5px;color:var(--sub);display:block;margin-top:3px;font-weight:600;white-space:nowrap;}
+.week-total{font-size:13px;color:var(--accent);display:block;margin-top:5px;font-weight:800;white-space:nowrap;}
 
-  .detail-section-label{
-    font-size:10.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;font-weight:700;
-    margin-bottom:8px;
-  }
+/* Day tiles */
+.day-cell{
+  background:var(--tile);
+  border-radius:10px;
+  border:1.5px solid var(--tile-border);
+  padding:10px 11px;
+  width:138px;
+  height:118px;
+  cursor:grab;
+  display:flex;flex-direction:column;gap:4px;
+  overflow:hidden;
+  transition:border-color .1s;
+  position:relative;
+}
+.day-cell:active{cursor:grabbing;}
+.day-cell.over{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent) inset;}
+.day-cell.dragging{opacity:.3;}
+.day-cell.blank{
+  background:transparent;border:1.5px dashed var(--line);
+  cursor:default;opacity:.5;
+}
 
-  .typecounts{display:flex;flex-wrap:wrap;gap:8px;}
-  .typecounts .pill{
-    font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;
-    background:var(--panel);border:1px solid var(--line);color:var(--ink);
-  }
-  .typecounts .pill .n{color:var(--sub);font-weight:600;margin-left:3px;}
+/* Color buckets (applied when body.colorcode) */
+body.colorcode .bucket-rest{background:var(--c-rest);}
+body.colorcode .bucket-recovery{background:var(--c-recovery);}
+body.colorcode .bucket-easy{background:var(--c-easy);}
+body.colorcode .bucket-medlong{background:var(--c-medlong);}
+body.colorcode .bucket-long{background:var(--c-long);}
+body.colorcode .bucket-lt{background:var(--c-lt);}
+body.colorcode .bucket-mp{background:var(--c-mp);}
+body.colorcode .bucket-vo2{background:var(--c-vo2);}
+body.colorcode .bucket-race{background:var(--c-race);}
+body.colorcode .bucket-cross,.bucket-xtrain{background:var(--c-cross);}
 
-  .badge{
-    font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
-    padding:4px 8px;border-radius:20px;flex-shrink:0;width:124px;text-align:center;
-    color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .badge.Marathon{background:#1F8F5E;}
-  body.light .badge.Marathon{background:#1F8F5E;}
-  .badge.HalfMarathon{background:#3E78C4;}
-  .badge.TenK{background:#C98A33;}
-  .badge.FiveK{background:#9456C4;}
-  .badge.FifteenTen{background:#3FA0A0;}
-  .badge.Base{background:#7B8087;}
-  .badge.MultiDist{background:#B5638C;}
-  .badge.Custom{background:#7B8087;}
+/* Tile text */
+.tile-type{
+  font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
+  color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:none;border:none;padding:0;width:100%;cursor:pointer;text-align:left;
+}
+.tile-type:focus{outline:none;color:var(--ink);}
+.tile-type option{text-transform:none;}
 
-  .row-info{flex:1;min-width:0;}
-  .row-info .name{font-size:14.5px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .row-info .meta{font-size:12.5px;color:var(--sub);margin-top:3px;}
+.tile-dist-row{display:flex;align-items:baseline;gap:3px;}
+.tile-dist{
+  font-size:19px;font-weight:700;color:var(--ink);
+  background:transparent;border:none;border-bottom:1.5px solid transparent;
+  padding:0 0 1px;width:68px;
+}
+.tile-dist:focus{outline:none;border-bottom-color:var(--accent);}
+.tile-dist::placeholder{color:var(--sub);}
+.tile-unit{font-size:11.5px;color:var(--sub);font-weight:700;}
+.tile-time-flag{font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase;margin-left:2px;}
 
-  .row-actions{display:flex;gap:4px;flex-shrink:0;}
+.tile-note{
+  background:transparent;border:none;color:var(--sub);font-size:11.5px;
+  padding:0;width:100%;flex:1;font-family:inherit;resize:none;line-height:1.35;
+}
+.tile-note:focus{outline:none;color:var(--ink);}
+.tile-note::placeholder{color:var(--sub);opacity:.5;}
 
-  .empty-state{
-    border:1.5px dashed var(--line);border-radius:12px;
-    padding:26px;text-align:center;color:var(--sub);font-size:13px;
-  }
-  .empty-state .btn{margin-top:12px;}
-
-  /* modal */
-  .modal-bg{display:none;position:fixed;inset:0;background:rgba(20,20,18,.5);align-items:center;justify-content:center;z-index:10;}
-  .modal-bg.open{display:flex;}
-  .modal{
-    background:var(--panel);border:1px solid var(--line);border-radius:14px;
-    width:420px;max-width:92vw;padding:24px;max-height:84vh;overflow-y:auto;
-  }
-  .modal h3{margin:0 0 16px;font-size:16px;}
-  .modal label{display:block;font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin:14px 0 5px;}
-  .modal input[type=text]{
-    width:100%;font-family:inherit;font-size:14px;background:var(--bg);color:var(--ink);
-    border:1px solid var(--line);border-radius:8px;padding:8px 10px;
-  }
-  .dropzone{
-    border:1.5px dashed var(--line);border-radius:10px;padding:28px 16px;text-align:center;
-    color:var(--sub);font-size:13px;cursor:pointer;
-  }
-  .dropzone.drag{border-color:var(--accent);color:var(--accent);}
-  .dropzone input{display:none;}
-  .preview{
-    margin-top:16px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:10px;
-    font-size:12.5px;color:var(--sub);display:none;
-  }
-  .preview.show{display:block;}
-  .preview .pname{color:var(--ink);font-weight:700;font-size:14px;margin-bottom:4px;}
-  .preview-error{color:var(--danger);}
-  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
-
-  .toast{
-    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-    background:var(--ink);color:var(--bg);padding:11px 20px;border-radius:30px;
-    font-size:13px;font-weight:600;opacity:0;transition:opacity .2s, transform .2s;
-    pointer-events:none;z-index:20;
-  }
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* responsive */
+@media(max-width:700px){
+  .topbar-r1,.topbar-r2{padding:10px 14px;}
+  .main{padding:14px 14px 40px;}
+  .race-title{font-size:15px;}
+}
 </style>
 </head>
-<body class="light">
+<body>
 
 <div class="topbar">
-  <div class="brand">
-    <h1>Plan Library</h1>
-    <div class="sub">Choose a template, or upload your own</div>
+  <div class="topbar-r1">
+    <div contenteditable="true" id="raceTitle" class="race-title"
+         data-placeholder="Name your race…" spellcheck="false">Run Plan</div>
+    <nav class="pagenav">
+      <a href="index.html" class="active">Calendar</a>
+      <a href="library.html">Library</a>
+    </nav>
+    <button class="mode-btn" id="modeBtn" title="Toggle dark/light mode">☀️</button>
   </div>
-
-  <nav class="pagenav">
-    <a href="index.html" class="active">Library</a>
-    <a href="calendar.html">Calendar</a>
-  </nav>
-
-  <input class="search" id="search" type="text" placeholder="Search plans…">
-  <select id="filterType">
-    <option value="">All distances</option>
-    <option value="Marathon">Marathon</option>
-    <option value="HalfMarathon">Half Marathon</option>
-    <option value="TenK">10K</option>
-    <option value="FiveK">5K</option>
-    <option value="FifteenTen">15K / 10 Mile</option>
-    <option value="MultiDist">Multiple Distances</option>
-    <option value="Base">Base Building</option>
-    <option value="Custom">Custom</option>
-  </select>
-
-  <button class="btn btn-primary" id="uploadBtn">Upload Plan</button>
-
-  <div class="switch" id="modeToggle"><div class="knob"></div></div>
-</div>
-
-<div class="main" id="main"></div>
-
-<div class="modal-bg" id="modalBg">
-  <div class="modal">
-    <h3 id="modalTitle">Upload a plan</h3>
-
-    <div id="uploadSection">
-      <div class="dropzone" id="dropzone">
-        Drop a .yaml, .yml, or .json plan file here<br>or click to browse
-        <input type="file" id="fileInput" accept=".yaml,.yml,.json,text/yaml,application/json">
+  <div class="topbar-r2">
+    <div class="field">
+      <label>Plan</label>
+      <select id="planSelect"></select>
+    </div>
+    <div class="field">
+      <label>Race date</label>
+      <input type="date" id="raceDate">
+    </div>
+    <div class="field">
+      <label>Week starts</label>
+      <select id="startDay">
+        <option value="0">Sunday</option>
+        <option value="1" selected>Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+      </select>
+    </div>
+    <div class="stat">
+      <div class="num" id="totalMiles">0</div>
+      <div class="lbl" id="totalLbl">total plan miles</div>
+    </div>
+    <div class="field">
+      <label>Units</label>
+      <div class="unit-toggle">
+        <button id="unitMi" class="on" onclick="setUnit('mi')">mi</button>
+        <button id="unitKm" onclick="setUnit('km')">km</button>
       </div>
-      <div class="preview" id="preview"></div>
     </div>
-
-    <label>Plan name</label>
-    <input type="text" id="nameInput" placeholder="e.g. My Modified Pfitzinger Plan">
-
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="cancelBtn">Cancel</button>
-      <button class="btn btn-primary" id="confirmBtn" disabled>Add to library</button>
+    <div class="color-section">
+      <label>Color by type</label>
+      <div class="switch" id="colorToggle"><div class="knob"></div></div>
+      <div class="legend" id="legend"></div>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="main">
+  <div class="grid-wrap">
+    <table>
+      <thead><tr id="headerRow"><th class="week-th">Week</th></tr></thead>
+      <tbody id="grid"></tbody>
+    </table>
+  </div>
+</div>
 
 <script>
-// ---- Real catalog of bundled template plans, parsed from the provided YAML
-// library (89 plans across 10 authors/sources). weeklyMileage and typeCounts
-// are computed directly from each plan's actual schedule -- nothing here is
-// synthetic. timeBased plans (e.g. Couch to 5K) have no real distance figures
-// in their source data, since workouts are prescribed by run/walk intervals. ----
+// ─────────────────────────────────────────────────────────────
+// DATA — Pfitzinger 18-week (55-70 mi) plan, from uploaded YAML
+// ─────────────────────────────────────────────────────────────
+const PFITZ_SCHEDULE = [{"workouts": [{"title": "Rest or cross-train"}, {"title": "LT {8-9:13-14} with 20\u201325 minutes at LT pace", "distance": [8.0, 9.0]}, {"title": "Med-long run {11-12:18-19}", "distance": [11.0, 12.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Med-long run {13-15:21-24}", "distance": [13.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {7-9:11-14} with 6 \u00d7 10 sec hill sprints + 8 \u00d7 100 m strides", "distance": [7.0, 9.0]}, {"title": "Med-long run {11-13:18-21}", "distance": [11.0, 13.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Marathon-pace run {15-16:24-26} with {8:13} at marathon pace", "distance": [15.0, 16.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Med-long run {12-14:19-23}", "distance": [12.0, 14.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "LT {9-10:14-16} with 25-30 minutes at LT pace", "distance": [9.0, 10.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {8-9:13-14} with 6 \u00d7 10 sec hill sprints + 8 \u00d7 100 m strides", "distance": [8.0, 9.0]}, {"title": "Med-long run {13-15:21-24}", "distance": [13.0, 15.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {10-11:16-18}", "distance": [10.0, 11.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Long run {17-18:27-29}", "distance": [17.0, 18.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "LT {8-10:13-16} with 30\u201335 minutes at LT pace", "distance": [8.0, 10.0]}, {"title": "Med-long run {13-15:21-24}", "distance": [13.0, 15.0]}, {"title": "Recovery {4-6:6-10}", "distance": [4.0, 6.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "Marathon-pace run {17-18:27-29} with {10:16} at marathon pace", "distance": [17.0, 18.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {8-9:13-14} with 10 \u00d7 100 m strides", "distance": [8.0, 9.0]}, {"title": "Med-long run {11-12:18-19}", "distance": [11.0, 12.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "LT {9-11:14-18} with 30\u201335 minutes at LT pace", "distance": [9.0, 11.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Gen-aerobic + speed {7-8:11-13} with 6 \u00d7 10 sec hill sprints + 10 \u00d7 100 m strides", "distance": [7.0, 8.0]}, {"title": "Long run {19-21:31-34}", "distance": [19.0, 21.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "LT {10-12:16-19} with 35\u201340 minutes at LT pace", "distance": [10.0, 12.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Long run {19-21:31-34}", "distance": [19.0, 21.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 \u00d7 100 m strides", "distance": [6.0, 7.0]}, {"title": "Marathon-pace run {18-19:29-31} with {12:19} at marathon pace", "distance": [18.0, 19.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {8-9:13-14}", "distance": [8.0, 9.0]}, {"title": "V\u0307O\u2082max {8-9:13-14} with 7 \u00d7 600 m at 5K race pace; jog 50%\u201390% interval time", "distance": [8.0, 9.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Gen-aerobic {10-11:16-18}", "distance": [10.0, 11.0]}, {"title": "Recovery + speed {6-7:10-11} with 8 x 10 sec hill sprints + 8 x 100 m strides", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "LT {11-12:18-19} with 35\u201345 minutes at LT pace", "distance": [11.0, 12.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Long run {21-22:34-35}", "distance": [21.0, 22.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {10-11:16-18}", "distance": [10.0, 11.0]}, {"title": "V\u0307O\u2082max {10-11:16-18} with 5 \u00d7 600 m at 5K race pace; jog 50%\u201390% interval time", "distance": [10.0, 11.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 \u00d7 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "8K\u201315K tune-up race (total {10-14:16-23})", "distance": [10.0, 14.0]}, {"title": "Long run {16-17:26-27}", "distance": [16.0, 17.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "V\u0307O\u2082max {10-12:16-19} with 6 \u00d7 1 km at 5K race pace; jog 50%\u201390% interval time", "distance": [10.0, 12.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery {5-7:8-11}", "distance": [5.0, 7.0]}, {"title": "Marathon-pace run {19-20:31-32} with {14:23} at marathon pace", "distance": [19.0, 20.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "V\u0307O\u2082max {9-10:14-16} with 5 \u00d7 600 m at 5K race pace; jog 50%\u201390% interval time", "distance": [9.0, 10.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 \u00d7 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "8K\u201315K tune-up race (total {10-14:16-23})", "distance": [10.0, 14.0]}, {"title": "Long run {16-17:26-27}", "distance": [16.0, 17.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "V\u0307O\u2082max {11-12:18-19} with 6 \u00d7 1 km at 5K race pace; jog 50%\u201390% interval time", "distance": [11.0, 12.0]}, {"title": "Med-long run {14-15:23-24}", "distance": [14.0, 15.0]}, {"title": "Gen-aerobic + speed {8-9:13-14} with 8 \u00d7 100 m strides", "distance": [8.0, 9.0]}, {"title": "Recovery {5-7:8-11}", "distance": [5.0, 7.0]}, {"title": "Long run {19-21:31-34}", "distance": [19.0, 21.0]}]}, {"workouts": [{"title": "Rest or cross-train"}, {"title": "Gen-aerobic + speed {7-8:11-13} with 6 x 10 sec hill sprints + 12 x 100 m strides", "distance": [7.0, 8.0]}, {"title": "Gen-aerobic {9-10:14-16}", "distance": [9.0, 10.0]}, {"title": "Recovery + speed {6-7:10-11} with 6 x 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "8K-10K tune-up race (total {10-12:16-19})", "distance": [10.0, 12.0]}, {"title": "Long run {16-17:26-27}", "distance": [16.0, 17.0]}]}, {"workouts": [{"title": "Rest"}, {"title": "Recovery + speed {6-7:10-11} with 8 x 100 m strides", "distance": [6.0, 7.0]}, {"title": "Recovery {4-5:6-8}", "distance": [4.0, 5.0]}, {"title": "VO\u2082max {8-9:13-14} with 5 x 1 km at 5K race pace; jog 50%-90% interval time", "distance": [8.0, 9.0]}, {"title": "Recovery {5-6:8-10}", "distance": [5.0, 6.0]}, {"title": "Recovery + speed {5-6:8-10} with 8 x 100 m strides", "distance": [5.0, 6.0]}, {"title": "Med-long run {12-13:19-21}", "distance": [12.0, 13.0]}]}, {"workouts": [{"title": "Rest"}, {"title": "Recovery {6-7:10-11}", "distance": [6.0, 7.0]}, {"title": "Dress rehearsal {6-7:10-11} with {2:3} at marathon pace", "distance": [6.0, 7.0]}, {"title": "Recovery {3-4:5-6}", "distance": [3.0, 4.0]}, {"title": "Recovery + speed {4-5:6-8} with 6 x 100 m strides", "distance": [4.0, 5.0]}, {"title": "Recovery {2-4:3-6}", "distance": [2.0, 4.0]}, {"title": "Goal Marathon", "distance": 26.2}]}];
 
-let library = [
-  {
-    "id": "boston_level_four",
-    "name": "Boston Level Four Marathon Training Plan",
-    "author": "B.A.A. (Boston Marathon)",
-    "type": "Marathon",
-    "weeks": 20,
-    "peakMiles": 59,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.baa.org//races/boston-marathon/enter/training/levelfour",
-    "weeklyMileage": [
-      45,
-      44,
-      47,
-      31,
-      51,
-      51,
-      38,
-      51,
-      44,
-      59,
-      46,
-      44,
-      32,
-      54,
-      32,
-      49,
-      42,
-      38,
-      35,
-      26
-    ],
-    "typeCounts": {
-      "Easy": 115,
-      "Rest": 22,
-      "Tempo": 3
-    }
-  },
-  {
-    "id": "boston_level_one",
-    "name": "Boston Level One Marathon Training Plan",
-    "author": "B.A.A. (Boston Marathon)",
-    "type": "Marathon",
-    "weeks": 20,
-    "peakMiles": 40,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.baa.org//races/boston-marathon/enter/training/levelone",
-    "weeklyMileage": [
-      26,
-      27,
-      23,
-      27,
-      32,
-      29,
-      21,
-      35,
-      32,
-      35,
-      36,
-      36,
-      23,
-      37,
-      24,
-      34,
-      40,
-      29,
-      28,
-      18
-    ],
-    "typeCounts": {
-      "Rest": 26,
-      "Easy": 73,
-      "Cross": 36,
-      "Recovery": 2,
-      "Tempo": 3
-    }
-  },
-  {
-    "id": "boston_level_three",
-    "name": "Boston Level Three Marathon Training Plan",
-    "author": "B.A.A. (Boston Marathon)",
-    "type": "Marathon",
-    "weeks": 20,
-    "peakMiles": 53,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.baa.org//races/boston-marathon/enter/training/levelthree",
-    "weeklyMileage": [
-      38,
-      38,
-      41,
-      47,
-      43,
-      34,
-      46,
-      48,
-      38,
-      53,
-      41,
-      41,
-      26,
-      52,
-      34,
-      45,
-      43,
-      40,
-      29,
-      22
-    ],
-    "typeCounts": {
-      "Easy": 102,
-      "Rest": 35,
-      "Tempo": 3
-    }
-  },
-  {
-    "id": "boston_level_two",
-    "name": "Boston Level Two Marathon Training Plan",
-    "author": "B.A.A. (Boston Marathon)",
-    "type": "Marathon",
-    "weeks": 20,
-    "peakMiles": 47,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.baa.org//races/boston-marathon/enter/training/leveltwo",
-    "weeklyMileage": [
-      31,
-      33,
-      34,
-      36,
-      37,
-      39,
-      27,
-      44,
-      31,
-      42,
-      43,
-      35,
-      29,
-      42,
-      29,
-      32,
-      47,
-      39,
-      24,
-      19
-    ],
-    "typeCounts": {
-      "Easy": 83,
-      "Rest": 43,
-      "Cross": 10,
-      "Recovery": 2,
-      "Tempo": 2
-    }
-  },
-  {
-    "id": "c25k",
-    "name": "Couch to 5K",
-    "author": "Couch to 5K",
-    "type": "FiveK",
-    "weeks": 8,
-    "peakMiles": 0,
-    "units": "km",
-    "custom": false,
-    "timeBased": true,
-    "source": "https://www.coachmag.co.uk/5k-training/3472/running-for-beginners-free-couch-to-5k-plan",
-    "weeklyMileage": [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    "typeCounts": {
-      "Rest": 32,
-      "Easy": 24
-    }
-  },
-  {
-    "id": "c25k_rbp",
-    "name": "Runner's Blueprint Couch to 5K",
-    "author": "Runner's Blueprint",
-    "type": "FiveK",
-    "weeks": 8,
-    "peakMiles": 0,
-    "units": "km",
-    "custom": false,
-    "timeBased": true,
-    "source": "https://www.runnersblueprint.com/couch-to-5k/",
-    "weeklyMileage": [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    "typeCounts": {
-      "Easy": 24,
-      "Rest": 32
-    }
-  },
-  {
-    "id": "coogan_pbr_mara_up_to_65",
-    "name": "16-Week Marathon Schedule - Up to 65 Miles per Week",
-    "author": "Personal Best Running",
-    "type": "Marathon",
-    "weeks": 16,
-    "peakMiles": 60,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://us.humankinetics.com/products/personal-best-running",
-    "weeklyMileage": [
-      38.0,
-      41.8,
-      45.6,
-      48.6,
-      53.6,
-      57.1,
-      55.4,
-      58.6,
-      59.6,
-      50.8,
-      52.8,
-      55.4,
-      60.0,
-      46.4,
-      40.0,
-      48.2
-    ],
-    "typeCounts": {
-      "Easy": 53,
-      "Rest": 18,
-      "Recovery": 8,
-      "Long": 15,
-      "Tempo": 11,
-      "Intervals": 7
-    }
-  },
-  {
-    "id": "frr_15k_10m_01",
-    "name": "15k and 10 Miles Schedule 1",
-    "author": "Faster Road Racing",
-    "type": "FifteenTen",
-    "weeks": 12,
-    "peakMiles": 45,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      31.0,
-      33.0,
-      36.0,
-      31.0,
-      39.0,
-      41.0,
-      43.0,
-      36.0,
-      45.0,
-      37.0,
-      31.0,
-      32.0
-    ],
-    "typeCounts": {
-      "Rest": 28,
-      "Intervals": 14,
-      "Easy": 21,
-      "Tempo": 5,
-      "Recovery": 11,
-      "Long": 1,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "frr_15k_10m_02",
-    "name": "15k and 10 Miles Schedule 2",
-    "author": "Faster Road Racing",
-    "type": "FifteenTen",
-    "weeks": 12,
-    "peakMiles": 60,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      36.0,
-      48.0,
-      50.0,
-      43.0,
-      54.0,
-      54.0,
-      55.0,
-      32.0,
-      60.0,
-      41.0,
-      36.0,
-      39.0
-    ],
-    "typeCounts": {
-      "Rest": 17,
-      "Easy": 30,
-      "Tempo": 5,
-      "Intervals": 15,
-      "Recovery": 12,
-      "Long": 1,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "frr_15k_10m_03",
-    "name": "15k and 10 Miles Schedule 3",
-    "author": "Faster Road Racing",
-    "type": "FifteenTen",
-    "weeks": 12,
-    "peakMiles": 80,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      61.0,
-      64.0,
-      68.0,
-      63.0,
-      72.0,
-      74.0,
-      76.0,
-      65.0,
-      80.0,
-      65.0,
-      55.0,
-      46.0
-    ],
-    "typeCounts": {
-      "Rest": 3,
-      "Easy": 33,
-      "Tempo": 5,
-      "Recovery": 24,
-      "Intervals": 14,
-      "Long": 1,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "frr_5k_01",
-    "name": "5K Schedule 1",
-    "author": "Faster Road Racing",
-    "type": "FiveK",
-    "weeks": 13,
-    "peakMiles": 40,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      30.0,
-      32.0,
-      34.0,
-      30.0,
-      36.0,
-      37.0,
-      38.0,
-      33.0,
-      40.0,
-      33.0,
-      29.0,
-      29.0,
-      31.0
-    ],
-    "typeCounts": {
-      "Rest": 26,
-      "Intervals": 17,
-      "Easy": 23,
-      "Tempo": 3,
-      "Recovery": 18,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "frr_5k_02",
-    "name": "5K Schedule 2",
-    "author": "Faster Road Racing",
-    "type": "FiveK",
-    "weeks": 13,
-    "peakMiles": 55,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      45.0,
-      47.0,
-      49.0,
-      44.0,
-      50.0,
-      51.0,
-      53.0,
-      46.0,
-      55.0,
-      46.0,
-      39.0,
-      36.0,
-      38.0
-    ],
-    "typeCounts": {
-      "Rest": 13,
-      "Easy": 33,
-      "Tempo": 3,
-      "Recovery": 21,
-      "Intervals": 17,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "frr_5k_03",
-    "name": "5K Schedule 3",
-    "author": "Faster Road Racing",
-    "type": "FiveK",
-    "weeks": 13,
-    "peakMiles": 70,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      60.0,
-      62.0,
-      64.0,
-      55.0,
-      65.0,
-      66.0,
-      68.0,
-      60.0,
-      70.0,
-      60.0,
-      51.0,
-      40.0,
-      44.0
-    ],
-    "typeCounts": {
-      "Recovery": 29,
-      "Easy": 36,
-      "Tempo": 3,
-      "Intervals": 17,
-      "Race": 3,
-      "MP": 1,
-      "Rest": 2
-    }
-  },
-  {
-    "id": "frr_8k10k_01",
-    "name": "8K-10K Schedule 1",
-    "author": "Faster Road Racing",
-    "type": "TenK",
-    "weeks": 13,
-    "peakMiles": 42,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      30.0,
-      32.0,
-      34.0,
-      30.0,
-      37.0,
-      39.0,
-      41.0,
-      34.0,
-      42.0,
-      34.0,
-      30.0,
-      31.0,
-      32.0
-    ],
-    "typeCounts": {
-      "Rest": 29,
-      "Intervals": 16,
-      "Easy": 23,
-      "Tempo": 3,
-      "Recovery": 15,
-      "MP": 2,
-      "Race": 3
-    }
-  },
-  {
-    "id": "frr_8k10k_02",
-    "name": "8K-10K Schedule 2",
-    "author": "Faster Road Racing",
-    "type": "TenK",
-    "weeks": 13,
-    "peakMiles": 57,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      45.0,
-      47.0,
-      49.0,
-      45.0,
-      52.0,
-      54.0,
-      56.0,
-      47.0,
-      57.0,
-      47.0,
-      40.0,
-      38.0,
-      39.0
-    ],
-    "typeCounts": {
-      "Rest": 13,
-      "Easy": 33,
-      "Tempo": 1,
-      "Recovery": 23,
-      "Intervals": 16,
-      "MP": 2,
-      "Race": 3
-    }
-  },
-  {
-    "id": "frr_8k10k_03",
-    "name": "8K-10K Schedule 3",
-    "author": "Faster Road Racing",
-    "type": "TenK",
-    "weeks": 13,
-    "peakMiles": 76,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      60.0,
-      63.0,
-      66.0,
-      60.0,
-      69.0,
-      71.0,
-      73.0,
-      62.0,
-      76.0,
-      62.0,
-      52.0,
-      43.0,
-      45.0
-    ],
-    "typeCounts": {
-      "Rest": 4,
-      "Easy": 36,
-      "Tempo": 2,
-      "Recovery": 28,
-      "Intervals": 15,
-      "MP": 3,
-      "Race": 3
-    }
-  },
-  {
-    "id": "frr_bt_01",
-    "name": "Base Building Schedule 1",
-    "author": "Faster Road Racing",
-    "type": "Base",
-    "weeks": 10,
-    "peakMiles": 30,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      16.0,
-      18.0,
-      18.0,
-      20.0,
-      23.0,
-      23.0,
-      25.0,
-      28.0,
-      28.0,
-      30.0
-    ],
-    "typeCounts": {
-      "Rest": 30,
-      "Easy": 34,
-      "Tempo": 3,
-      "Intervals": 3
-    }
-  },
-  {
-    "id": "frr_bt_02",
-    "name": "Base Building Schedule 2",
-    "author": "Faster Road Racing",
-    "type": "Base",
-    "weeks": 10,
-    "peakMiles": 44,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      27.0,
-      30.0,
-      30.0,
-      33.0,
-      36.0,
-      36.0,
-      38.0,
-      41.0,
-      42.0,
-      44.0
-    ],
-    "typeCounts": {
-      "Rest": 20,
-      "Easy": 43,
-      "Intervals": 4,
-      "Tempo": 3
-    }
-  },
-  {
-    "id": "frr_bt_03",
-    "name": "Base Building Schedule 3",
-    "author": "Faster Road Racing",
-    "type": "Base",
-    "weeks": 10,
-    "peakMiles": 60,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      38.0,
-      41.0,
-      41.0,
-      46.0,
-      49.0,
-      49.0,
-      53.0,
-      56.0,
-      56.0,
-      60.0
-    ],
-    "typeCounts": {
-      "Rest": 13,
-      "Easy": 43,
-      "Recovery": 7,
-      "Intervals": 4,
-      "Tempo": 3
-    }
-  },
-  {
-    "id": "frr_multiple_distances_01",
-    "name": "Multiple Distances (5K to Half-Marathon) Schedule 1",
-    "author": "Faster Road Racing",
-    "type": "MultiDist",
-    "weeks": 10,
-    "peakMiles": 42,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      30.0,
-      32.0,
-      34.0,
-      30.0,
-      36.0,
-      39.0,
-      42.0,
-      36.0,
-      32.0,
-      22.0
-    ],
-    "typeCounts": {
-      "Rest": 24,
-      "Intervals": 12,
-      "Easy": 18,
-      "Tempo": 4,
-      "Recovery": 9,
-      "Long": 1,
-      "Race": 1,
-      "MP": 1
-    }
-  },
-  {
-    "id": "frr_multiple_distances_02",
-    "name": "Multiple Distances (5K to Half-Marathon) Schedule 2",
-    "author": "Faster Road Racing",
-    "type": "MultiDist",
-    "weeks": 10,
-    "peakMiles": 57,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      45.0,
-      47.0,
-      50.0,
-      45.0,
-      52.0,
-      54.0,
-      57.0,
-      48.0,
-      42.0,
-      28.0
-    ],
-    "typeCounts": {
-      "Rest": 10,
-      "Easy": 27,
-      "Tempo": 4,
-      "Recovery": 14,
-      "Intervals": 12,
-      "Long": 1,
-      "Race": 1,
-      "MP": 1
-    }
-  },
-  {
-    "id": "frr_multiple_distances_03",
-    "name": "Multiple Distances (5K to Half-Marathon) Schedule 3",
-    "author": "Faster Road Racing",
-    "type": "MultiDist",
-    "weeks": 10,
-    "peakMiles": 75,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      60.0,
-      63.0,
-      66.0,
-      60.0,
-      69.0,
-      72.0,
-      75.0,
-      64.0,
-      54.0,
-      32.0
-    ],
-    "typeCounts": {
-      "Rest": 3,
-      "Easy": 28,
-      "Tempo": 4,
-      "Recovery": 20,
-      "Intervals": 12,
-      "Long": 1,
-      "Race": 1,
-      "MP": 1
-    }
-  },
-  {
-    "id": "hansons_adv_half",
-    "name": "Hansons Advanced",
-    "author": "Hansons Method",
-    "type": "HalfMarathon",
-    "weeks": 18,
-    "peakMiles": 50,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://hansons-running.com/pages/training-plans",
-    "weeklyMileage": [
-      17.0,
-      33.0,
-      34.0,
-      36.0,
-      40.0,
-      44.0,
-      41.0,
-      46.0,
-      41.0,
-      47.0,
-      45.0,
-      49.0,
-      47.0,
-      50.0,
-      48.0,
-      50.0,
-      44.0,
-      39.0
-    ],
-    "typeCounts": {
-      "Rest": 20,
-      "Easy": 93,
-      "Long": 13
-    }
-  },
-  {
-    "id": "hansons_adv_mara",
-    "name": "Hansons Advanced",
-    "author": "Hansons Method",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 62,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://hansons-running.com/pages/training-plans",
-    "weeklyMileage": [
-      38.0,
-      41.0,
-      45.0,
-      44.0,
-      47.0,
-      47.0,
-      52.0,
-      49.0,
-      56.0,
-      50.0,
-      59.5,
-      54.0,
-      60.5,
-      53.0,
-      61.5,
-      55.0,
-      53.5,
-      52.2
-    ],
-    "typeCounts": {
-      "Easy": 81,
-      "Rest": 18,
-      "Tempo": 15,
-      "Long": 12
-    }
-  },
-  {
-    "id": "hansons_beg_half",
-    "name": "Hansons Beginner",
-    "author": "Hansons Method",
-    "type": "HalfMarathon",
-    "weeks": 18,
-    "peakMiles": 47,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://hansons-running.com/pages/training-plans",
-    "weeklyMileage": [
-      10.0,
-      15.0,
-      21.0,
-      22.0,
-      28.0,
-      37.0,
-      37.0,
-      41.0,
-      41.0,
-      43.0,
-      44.0,
-      46.0,
-      45.0,
-      47.0,
-      47.0,
-      47.0,
-      42.0,
-      39.0
-    ],
-    "typeCounts": {
-      "Rest": 25,
-      "Easy": 89,
-      "Long": 12
-    }
-  },
-  {
-    "id": "hansons_beg_mara",
-    "name": "Hansons Beginner",
-    "author": "Hansons Method",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 58,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://hansons-running.com/pages/training-plans",
-    "weeklyMileage": [
-      12.0,
-      15.0,
-      21.0,
-      20.0,
-      24.0,
-      40.0,
-      39.0,
-      42.0,
-      49.0,
-      48.0,
-      54.5,
-      50.0,
-      56.5,
-      49.0,
-      57.5,
-      51.0,
-      49.5,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 24,
-      "Easy": 80,
-      "Tempo": 12,
-      "Long": 10
-    }
-  },
-  {
-    "id": "hansons_c210k",
-    "name": "Hansons Couch Potato to 10k",
-    "author": "Hansons Method",
-    "type": "TenK",
-    "weeks": 21,
-    "peakMiles": 0,
-    "units": "mi",
-    "custom": false,
-    "timeBased": true,
-    "source": "https://hansons-running.com/pages/training-plans",
-    "weeklyMileage": [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    "typeCounts": {
-      "Easy": 147
-    }
-  },
-  {
-    "id": "higdon_adv_mara1",
-    "name": "Advanced 1",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 50,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/advanced-1-marathon/",
-    "weeklyMileage": [
-      26.0,
-      27.0,
-      26.0,
-      31.0,
-      34.0,
-      30.0,
-      39.0,
-      40.0,
-      29.1,
-      44.0,
-      49.0,
-      33.0,
-      49.0,
-      34.0,
-      50.0,
-      34.0,
-      26.0,
-      33.2
-    ],
-    "typeCounts": {
-      "Easy": 100,
-      "Rest": 20,
-      "Tempo": 6
-    }
-  },
-  {
-    "id": "higdon_adv_mara2",
-    "name": "Advanced 2",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 43,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/advanced-2-marathon/",
-    "weeklyMileage": [
-      21.0,
-      25.0,
-      20.0,
-      25.0,
-      30.0,
-      23.0,
-      31.0,
-      35.0,
-      21.1,
-      35.0,
-      43.0,
-      27.0,
-      39.0,
-      33.0,
-      40.0,
-      26.0,
-      24.0,
-      34.2
-    ],
-    "typeCounts": {
-      "Easy": 89,
-      "Tempo": 17,
-      "Rest": 20
-    }
-  },
-  {
-    "id": "higdon_half3",
-    "name": "Half Marathon 3",
-    "author": "Hal Higdon",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 22,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/half-marathon-training/half-marathon-3",
-    "weeklyMileage": [
-      13.0,
-      10.0,
-      15.0,
-      16.0,
-      12.0,
-      7.0,
-      20.0,
-      15.0,
-      7.0,
-      22.0,
-      16.0,
-      20.1
-    ],
-    "typeCounts": {
-      "Rest": 27,
-      "Easy": 32,
-      "Cross": 21,
-      "Tempo": 4
-    }
-  },
-  {
-    "id": "higdon_int_half1",
-    "name": "Half Marathon Intermediate 1",
-    "author": "Hal Higdon",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 34,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/half-marathon-training/intermediate-1-half-marathon/",
-    "weeklyMileage": [
-      17.0,
-      18.0,
-      18.0,
-      22.0,
-      25.0,
-      17.1,
-      29.0,
-      31.0,
-      24.2,
-      34.0,
-      30.0,
-      23.1
-    ],
-    "typeCounts": {
-      "Cross": 9,
-      "Easy": 56,
-      "Rest": 19
-    }
-  },
-  {
-    "id": "higdon_int_half2",
-    "name": "Half Marathon Intermediate 2",
-    "author": "Hal Higdon",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 24,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/half-marathon-training/intermediate-2-half-marathon/",
-    "weeklyMileage": [
-      14.0,
-      15.0,
-      9.6,
-      16.5,
-      18.0,
-      13.2,
-      20.5,
-      22.5,
-      17.3,
-      24.0,
-      23.0,
-      19.1
-    ],
-    "typeCounts": {
-      "Cross": 9,
-      "Easy": 50,
-      "Rest": 19,
-      "Tempo": 6
-    }
-  },
-  {
-    "id": "higdon_int_mara1",
-    "name": "Intermediate 1",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 44,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/intermediate-1-marathon/",
-    "weeklyMileage": [
-      24.0,
-      25.0,
-      22.0,
-      29.0,
-      30.0,
-      26.0,
-      36.0,
-      37.0,
-      26.1,
-      41.0,
-      44.0,
-      36.0,
-      43.0,
-      35.0,
-      43.0,
-      32.0,
-      24.0,
-      35.2
-    ],
-    "typeCounts": {
-      "Cross": 18,
-      "Easy": 88,
-      "Rest": 20
-    }
-  },
-  {
-    "id": "higdon_int_mara2",
-    "name": "Intermediate 2",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 50,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/intermediate-2-marathon/",
-    "weeklyMileage": [
-      26.0,
-      27.0,
-      26.0,
-      31.0,
-      34.0,
-      30.0,
-      40.0,
-      41.0,
-      30.1,
-      45.0,
-      50.0,
-      34.0,
-      50.0,
-      34.0,
-      50.0,
-      34.0,
-      26.0,
-      35.2
-    ],
-    "typeCounts": {
-      "Cross": 18,
-      "Easy": 88,
-      "Rest": 20
-    }
-  },
-  {
-    "id": "higdon_mara3",
-    "name": "Marathon 3",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 24,
-    "peakMiles": 37,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/marathon-3/",
-    "weeklyMileage": [
-      12.0,
-      11.0,
-      11.0,
-      17.0,
-      15.0,
-      16.0,
-      22.0,
-      20.0,
-      10.0,
-      26.0,
-      24.0,
-      6.0,
-      30.0,
-      27.0,
-      25.0,
-      28.1,
-      30.0,
-      28.0,
-      37.0,
-      16.0,
-      30.0,
-      24.0,
-      16.0,
-      7.0
-    ],
-    "typeCounts": {
-      "Rest": 53,
-      "Easy": 89,
-      "Cross": 19,
-      "Tempo": 7
-    }
-  },
-  {
-    "id": "higdon_nov_half1",
-    "name": "Half Marathon Novice 1",
-    "author": "Hal Higdon",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 23,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/half-marathon-training/novice-1-half-marathon/",
-    "weeklyMileage": [
-      12.0,
-      12.0,
-      14.0,
-      14.0,
-      16.0,
-      13.1,
-      19.0,
-      20.0,
-      19.2,
-      22.0,
-      23.0,
-      22.1
-    ],
-    "typeCounts": {
-      "Rest": 27,
-      "Easy": 48,
-      "Cross": 9
-    }
-  },
-  {
-    "id": "higdon_nov_half2",
-    "name": "Half Marathon Novice 2",
-    "author": "Hal Higdon",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 23,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/half-marathon-training/novice-2-half-marathon/",
-    "weeklyMileage": [
-      13.0,
-      14.0,
-      16.0,
-      17.0,
-      18.0,
-      13.1,
-      20.0,
-      21.0,
-      17.2,
-      22.0,
-      23.0,
-      20.1
-    ],
-    "typeCounts": {
-      "Rest": 25,
-      "Easy": 48,
-      "Cross": 11
-    }
-  },
-  {
-    "id": "higdon_nov_mara1",
-    "name": "Novice 1",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 40,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/novice-1-marathon/",
-    "weeklyMileage": [
-      15.0,
-      16.0,
-      15.0,
-      19.0,
-      21.0,
-      18.0,
-      24.0,
-      25.1,
-      24.0,
-      29.0,
-      32.0,
-      29.0,
-      36.0,
-      33.0,
-      40.0,
-      29.0,
-      21.0,
-      35.2
-    ],
-    "typeCounts": {
-      "Rest": 38,
-      "Easy": 72,
-      "Cross": 16
-    }
-  },
-  {
-    "id": "higdon_nov_mara2",
-    "name": "Novice 2",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 36,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/novice-2-marathon/",
-    "weeklyMileage": [
-      19.0,
-      20.0,
-      17.0,
-      23.0,
-      24.0,
-      21.0,
-      29.0,
-      30.0,
-      28.1,
-      33.0,
-      36.0,
-      31.0,
-      34.0,
-      30.0,
-      35.0,
-      26.0,
-      19.0,
-      33.2
-    ],
-    "typeCounts": {
-      "Rest": 38,
-      "Easy": 72,
-      "Cross": 16
-    }
-  },
-  {
-    "id": "higdon_senior_mara",
-    "name": "Senior Marathon",
-    "author": "Hal Higdon",
-    "type": "Marathon",
-    "weeks": 8,
-    "peakMiles": 32,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.halhigdon.com/training-programs/marathon-training/senior/",
-    "weeklyMileage": [
-      24,
-      26,
-      24,
-      28,
-      26,
-      32,
-      24,
-      32.2
-    ],
-    "typeCounts": {
-      "Rest": 18,
-      "Easy": 23,
-      "Cross": 15
-    }
-  },
-  {
-    "id": "mee_breeze_12",
-    "name": "Breeze 40 or 50 Miles per Week, 12-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 62,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      34.0,
-      37.5,
-      40.0,
-      42.0,
-      45.0,
-      45.0,
-      45.0,
-      45.0,
-      45.0,
-      42.5,
-      42.5,
-      55.0
-    ],
-    "typeCounts": {
-      "Easy": 66,
-      "Rest": 17,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_breeze_18",
-    "name": "Breeze 40 or 50 Miles per Week, 18-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 64,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      29.5,
-      33.5,
-      37.5,
-      33.0,
-      38.0,
-      41.5,
-      45.0,
-      39.0,
-      45.0,
-      45.0,
-      45.0,
-      39.0,
-      45.0,
-      45.0,
-      42.5,
-      42.5,
-      40.0,
-      56.5
-    ],
-    "typeCounts": {
-      "Easy": 99,
-      "Rest": 26,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_gale_12",
-    "name": "Gale 70 or 80 Miles per Week, 12-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 80,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      57.5,
-      62.0,
-      66.0,
-      70.0,
-      73.5,
-      75.0,
-      75.0,
-      75.0,
-      67.5,
-      67.5,
-      62.5,
-      70.0
-    ],
-    "typeCounts": {
-      "Easy": 83,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_gale_18",
-    "name": "Gale 70 or 80 Miles per Week, 18-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 80,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      52.5,
-      57.5,
-      62.5,
-      52.5,
-      63.5,
-      68.0,
-      72.0,
-      59.0,
-      75.0,
-      75.0,
-      75.0,
-      63.0,
-      75.0,
-      72.5,
-      67.5,
-      67.5,
-      62.5,
-      68.0
-    ],
-    "typeCounts": {
-      "Easy": 116,
-      "Rest": 9,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_hurricane_12",
-    "name": "Hurricane 100 or 120 Miles per Week, 12-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 120,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      83.5,
-      89.5,
-      95.0,
-      101.5,
-      107.5,
-      110.0,
-      110.0,
-      110.0,
-      97.5,
-      90.0,
-      77.5,
-      75.0
-    ],
-    "typeCounts": {
-      "Easy": 83,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_hurricane_18",
-    "name": "Hurricane 100 or 120 Miles per Week, 18-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 120,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      77.5,
-      83.5,
-      89.5,
-      80.0,
-      92.5,
-      98.0,
-      103.5,
-      91.5,
-      107.5,
-      110.0,
-      110.0,
-      105.0,
-      97.0,
-      97.5,
-      95.0,
-      90.0,
-      82.5,
-      78.5
-    ],
-    "typeCounts": {
-      "Easy": 125,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_tornado_12",
-    "name": "Tornado 85 or 95 Miles per Week, 12-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 95,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      67.5,
-      72.5,
-      77.0,
-      81.5,
-      86.0,
-      90.0,
-      90.0,
-      90.0,
-      82.5,
-      77.5,
-      71.0,
-      70.5
-    ],
-    "typeCounts": {
-      "Easy": 83,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_tornado_18",
-    "name": "Tornado 85 or 95 Miles per Week, 18-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 95,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      62.5,
-      67.5,
-      73.0,
-      62.5,
-      75.0,
-      81.0,
-      86.5,
-      78.5,
-      90.0,
-      90.0,
-      90.0,
-      85.0,
-      81.5,
-      82.5,
-      80.0,
-      77.5,
-      68.5,
-      71.5
-    ],
-    "typeCounts": {
-      "Easy": 125,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_wind_12",
-    "name": "Wind 55 or 65 Miles per Week, 12-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 65,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      47.0,
-      50.0,
-      53.0,
-      55.5,
-      58.0,
-      60.0,
-      60.0,
-      60.0,
-      60.0,
-      55.0,
-      50.0,
-      59.0
-    ],
-    "typeCounts": {
-      "Easy": 72,
-      "Rest": 11,
-      "Race": 1
-    }
-  },
-  {
-    "id": "mee_wind_18",
-    "name": "Wind 55 or 65 Miles per Week, 18-week schedule",
-    "author": "Marathon Excellence",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 65,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/B0FNRPHLRY",
-    "weeklyMileage": [
-      42.5,
-      47.0,
-      51.5,
-      42.5,
-      51.5,
-      55.5,
-      58.5,
-      47.5,
-      60.0,
-      60.0,
-      60.0,
-      50.0,
-      60.0,
-      58.5,
-      57.5,
-      55.0,
-      52.5,
-      59.0
-    ],
-    "typeCounts": {
-      "Easy": 109,
-      "Rest": 16,
-      "Race": 1
-    }
-  },
-  {
-    "id": "pfitz_04_multi",
-    "name": "Multiple Marathoning, 4-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 4,
-    "peakMiles": 54,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      24.0,
-      38.0,
-      48.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 7,
-      "Recovery": 12,
-      "Easy": 3,
-      "Intervals": 1,
-      "Long": 3,
-      "MP": 1,
-      "Race": 1
-    }
-  },
-  {
-    "id": "pfitz_04_multi_4th",
-    "name": "Multiple Marathoning, 4-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 4,
-    "peakMiles": 53,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      22.0,
-      38.5,
-      45.0,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 7,
-      "Recovery": 13,
-      "Easy": 4,
-      "Intervals": 1,
-      "MP": 1,
-      "Long": 1,
-      "Race": 1
-    }
-  },
-  {
-    "id": "pfitz_06_multi",
-    "name": "Multiple Marathoning, 6-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 6,
-    "peakMiles": 60,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      24.0,
-      37.0,
-      52.0,
-      59.0,
-      46.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 9,
-      "Recovery": 16,
-      "Easy": 4,
-      "Intervals": 3,
-      "Long": 5,
-      "MP": 3,
-      "Race": 2
-    }
-  },
-  {
-    "id": "pfitz_06_multi_4th",
-    "name": "Multiple Marathoning, 6-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 6,
-    "peakMiles": 59,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      21.0,
-      35.5,
-      50.0,
-      55.5,
-      43.0,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 9,
-      "Recovery": 18,
-      "Easy": 4,
-      "Intervals": 2,
-      "Long": 4,
-      "MP": 3,
-      "Race": 2
-    }
-  },
-  {
-    "id": "pfitz_08_multi",
-    "name": "Multiple Marathoning, 8-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 8,
-    "peakMiles": 66,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      22.0,
-      32.0,
-      42.0,
-      55.0,
-      66.0,
-      58.0,
-      46.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 12,
-      "Recovery": 22,
-      "Intervals": 4,
-      "Easy": 4,
-      "Long": 8,
-      "Tempo": 1,
-      "MP": 3,
-      "Race": 2
-    }
-  },
-  {
-    "id": "pfitz_08_multi_4th",
-    "name": "Multiple Marathoning, 8-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 8,
-    "peakMiles": 67,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      21.0,
-      32.5,
-      41.5,
-      57.0,
-      64.0,
-      55.5,
-      43.0,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 12,
-      "Recovery": 23,
-      "Intervals": 3,
-      "Easy": 5,
-      "Long": 7,
-      "Tempo": 1,
-      "MP": 3,
-      "Race": 2
-    }
-  },
-  {
-    "id": "pfitz_10_multi",
-    "name": "Multiple Marathoning, 10-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 10,
-    "peakMiles": 67,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      22.0,
-      32.0,
-      42.0,
-      55.0,
-      65.0,
-      59.0,
-      67.0,
-      58.0,
-      47.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 14,
-      "Recovery": 25,
-      "Intervals": 5,
-      "Easy": 5,
-      "Long": 12,
-      "Tempo": 1,
-      "MP": 5,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_10_multi_4th",
-    "name": "Multiple Marathoning, 10-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 10,
-    "peakMiles": 69,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      21.0,
-      32.5,
-      41.5,
-      56.0,
-      64.0,
-      57.5,
-      66.0,
-      55.5,
-      43.0,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 14,
-      "Recovery": 27,
-      "Intervals": 3,
-      "Easy": 7,
-      "Long": 10,
-      "Tempo": 1,
-      "MP": 5,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_12_55",
-    "name": "Up to 55 miles per week, 12-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 55,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      35.0,
-      39.0,
-      43.0,
-      48.0,
-      42.0,
-      48.0,
-      55.0,
-      51.0,
-      52.0,
-      44.0,
-      32.0,
-      48.2
-    ],
-    "typeCounts": {
-      "Rest": 28,
-      "Intervals": 2,
-      "Easy": 3,
-      "Recovery": 21,
-      "MP": 8,
-      "Long": 16,
-      "Tempo": 4,
-      "Race": 2
-    }
-  },
-  {
-    "id": "pfitz_12_55_4th",
-    "name": "Up to 55 miles per week, 12-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 57,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472",
-    "weeklyMileage": [
-      35.0,
-      38.0,
-      44.5,
-      48.5,
-      40.0,
-      49.5,
-      54.5,
-      50.5,
-      52.0,
-      44.5,
-      33.0,
-      44.7
-    ],
-    "typeCounts": {
-      "Rest": 28,
-      "Intervals": 2,
-      "Easy": 6,
-      "Recovery": 21,
-      "MP": 7,
-      "Tempo": 4,
-      "Long": 13,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_12_70",
-    "name": "55 to 70 Miles per Week, 12-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 70,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      55.0,
-      59.0,
-      62.0,
-      66.0,
-      62.0,
-      70.0,
-      70.0,
-      66.0,
-      70.0,
-      58.0,
-      44.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 12,
-      "Intervals": 5,
-      "Long": 22,
-      "Recovery": 27,
-      "MP": 8,
-      "Tempo": 4,
-      "Easy": 4,
-      "Race": 2
-    }
-  },
-  {
-    "id": "pfitz_12_70_4th",
-    "name": "55 to 70 Miles per Week, 12-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 70,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472",
-    "weeklyMileage": [
-      55.5,
-      58.0,
-      59.5,
-      63.0,
-      54.0,
-      67.0,
-      66.5,
-      59.5,
-      66.5,
-      55.5,
-      43.0,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 12,
-      "Intervals": 5,
-      "Long": 16,
-      "Recovery": 28,
-      "Easy": 9,
-      "MP": 7,
-      "Tempo": 4,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_12_85",
-    "name": "70 to 85 Miles per Week, 12-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 87,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      66.0,
-      72.0,
-      75.0,
-      77.0,
-      74.0,
-      84.0,
-      87.0,
-      80.0,
-      83.0,
-      70.0,
-      54.0,
-      62.2
-    ],
-    "typeCounts": {
-      "Recovery": 33,
-      "Intervals": 9,
-      "Long": 21,
-      "MP": 8,
-      "Easy": 7,
-      "Tempo": 4,
-      "Race": 2
-    }
-  },
-  {
-    "id": "pfitz_12_85_4th",
-    "name": "70 to 85 Miles per Week, 12-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 88,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      65.5,
-      70.0,
-      72.0,
-      77.0,
-      64.5,
-      81.0,
-      83.5,
-      70.5,
-      82.0,
-      65.0,
-      51.0,
-      54.7
-    ],
-    "typeCounts": {
-      "Intervals": 5,
-      "Recovery": 36,
-      "Long": 16,
-      "Easy": 12,
-      "MP": 7,
-      "Tempo": 4,
-      "Race": 3,
-      "Rest": 1
-    }
-  },
-  {
-    "id": "pfitz_12_more_than_85",
-    "name": "More than 85 Miles per Week, 12-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 105,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      82.0,
-      88.0,
-      94.0,
-      100.0,
-      92.0,
-      103.0,
-      105.0,
-      94.0,
-      102.0,
-      79.0,
-      62.0,
-      66.2
-    ],
-    "typeCounts": {
-      "Recovery": 37,
-      "Intervals": 10,
-      "Long": 22,
-      "MP": 8,
-      "Tempo": 2,
-      "Race": 3,
-      "Easy": 2
-    }
-  },
-  {
-    "id": "pfitz_12_more_than_85_4th",
-    "name": "More than 85 Miles per Week, 12-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 105,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      80.5,
-      87.0,
-      89.5,
-      92.5,
-      77.5,
-      98.5,
-      99.5,
-      76.5,
-      97.0,
-      76.0,
-      62.0,
-      60.7
-    ],
-    "typeCounts": {
-      "Intervals": 7,
-      "Recovery": 43,
-      "Long": 16,
-      "Easy": 6,
-      "MP": 7,
-      "Tempo": 2,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_12_multi",
-    "name": "Multiple Marathoning, 12-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 67,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      27.0,
-      33.0,
-      42.0,
-      54.0,
-      60.0,
-      64.0,
-      66.0,
-      59.0,
-      67.0,
-      58.0,
-      47.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 16,
-      "Recovery": 29,
-      "Intervals": 7,
-      "Easy": 5,
-      "Long": 16,
-      "Tempo": 1,
-      "MP": 7,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_12_multi_4th",
-    "name": "Multiple Marathoning, 10-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 12,
-    "peakMiles": 69,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      21.0,
-      32.5,
-      41.5,
-      55.0,
-      59.0,
-      63.0,
-      65.0,
-      58.5,
-      66.0,
-      55.5,
-      43.0,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 16,
-      "Recovery": 31,
-      "Intervals": 5,
-      "Easy": 7,
-      "Long": 14,
-      "Tempo": 1,
-      "MP": 7,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_18_55",
-    "name": "Up to 55 miles per week, 18-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 55,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      33.0,
-      36.0,
-      40.0,
-      42.0,
-      45.0,
-      37.0,
-      50.0,
-      54.0,
-      48.0,
-      43.0,
-      55.0,
-      53.0,
-      52.0,
-      51.0,
-      52.0,
-      44.0,
-      32.0,
-      48.2
-    ],
-    "typeCounts": {
-      "Rest": 39,
-      "Tempo": 6,
-      "Easy": 10,
-      "Recovery": 31,
-      "Long": 21,
-      "Intervals": 5,
-      "MP": 11,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_18_55_4th",
-    "name": "Up to 55 miles per week, 18-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 59,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472",
-    "weeklyMileage": [
-      33.5,
-      35.5,
-      41.5,
-      43.5,
-      45.0,
-      36.5,
-      51.0,
-      54.0,
-      48.5,
-      42.5,
-      55.5,
-      51.5,
-      51.0,
-      51.5,
-      52.0,
-      44.5,
-      33.0,
-      44.7
-    ],
-    "typeCounts": {
-      "Rest": 39,
-      "Tempo": 6,
-      "Easy": 10,
-      "Recovery": 32,
-      "Long": 19,
-      "Intervals": 6,
-      "MP": 10,
-      "Race": 4
-    }
-  },
-  {
-    "id": "pfitz_18_70",
-    "name": "55 to 70 Miles per Week, 18-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 70,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      54.0,
-      55.0,
-      58.0,
-      62.0,
-      63.0,
-      55.0,
-      68.0,
-      66.0,
-      67.0,
-      58.0,
-      70.0,
-      65.0,
-      70.0,
-      60.0,
-      68.0,
-      56.0,
-      43.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 18,
-      "Tempo": 6,
-      "Long": 35,
-      "Recovery": 42,
-      "Easy": 6,
-      "Intervals": 6,
-      "MP": 10,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_18_70_4th",
-    "name": "55 to 70 Miles per Week, 18-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 71,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472",
-    "weeklyMileage": [
-      52.5,
-      54.0,
-      56.5,
-      60.5,
-      59.5,
-      52.0,
-      67.0,
-      65.0,
-      62.0,
-      55.0,
-      67.0,
-      61.5,
-      67.0,
-      59.5,
-      67.0,
-      55.5,
-      43.0,
-      50.2
-    ],
-    "typeCounts": {
-      "Rest": 18,
-      "Tempo": 6,
-      "Long": 25,
-      "Recovery": 42,
-      "Easy": 15,
-      "Intervals": 6,
-      "MP": 10,
-      "Race": 4
-    }
-  },
-  {
-    "id": "pfitz_18_85",
-    "name": "70 to 85 Miles per Week, 18-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 87,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      65.0,
-      67.0,
-      70.0,
-      74.0,
-      78.0,
-      68.0,
-      84.0,
-      82.0,
-      80.0,
-      74.0,
-      87.0,
-      76.0,
-      86.0,
-      75.0,
-      85.0,
-      69.0,
-      54.0,
-      62.2
-    ],
-    "typeCounts": {
-      "Recovery": 51,
-      "Tempo": 6,
-      "Long": 36,
-      "Easy": 11,
-      "Intervals": 8,
-      "MP": 11,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_18_85_4th",
-    "name": "70 to 85 Miles per Week, 18-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 87,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      64.0,
-      65.5,
-      68.5,
-      71.5,
-      72.0,
-      61.5,
-      79.0,
-      78.5,
-      75.0,
-      64.5,
-      81.5,
-      70.0,
-      81.5,
-      70.0,
-      82.5,
-      65.0,
-      51.0,
-      58.2
-    ],
-    "typeCounts": {
-      "Recovery": 53,
-      "Tempo": 6,
-      "Long": 26,
-      "Easy": 19,
-      "Intervals": 7,
-      "MP": 10,
-      "Race": 4,
-      "Rest": 1
-    }
-  },
-  {
-    "id": "pfitz_18_more_than_85",
-    "name": "More than 85 Miles per Week, 18-week schedule (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 107,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      80.0,
-      84.0,
-      88.0,
-      92.0,
-      95.0,
-      82.0,
-      100.0,
-      102.0,
-      103.0,
-      86.0,
-      107.0,
-      87.0,
-      102.0,
-      94.0,
-      102.0,
-      79.0,
-      62.0,
-      66.2
-    ],
-    "typeCounts": {
-      "Recovery": 58,
-      "Long": 36,
-      "Intervals": 8,
-      "MP": 7,
-      "Easy": 12,
-      "Tempo": 2,
-      "Race": 3
-    }
-  },
-  {
-    "id": "pfitz_18_more_than_85_4th",
-    "name": "More than 85 Miles per Week, 18-week schedule (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 18,
-    "peakMiles": 107,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      79.5,
-      83.0,
-      86.0,
-      91.0,
-      88.0,
-      75.5,
-      98.0,
-      99.5,
-      100.5,
-      80.5,
-      101.0,
-      80.0,
-      99.5,
-      81.0,
-      97.0,
-      76.0,
-      62.0,
-      60.7
-    ],
-    "typeCounts": {
-      "Recovery": 63,
-      "Long": 31,
-      "Intervals": 9,
-      "MP": 8,
-      "Easy": 10,
-      "Race": 4,
-      "Tempo": 1
-    }
-  },
-  {
-    "id": "pfitz_55_recovery",
-    "name": "Marathon Up to 55 Miles per Week Recovery (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 35,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      13,
-      23,
-      26,
-      30,
-      35
-    ],
-    "typeCounts": {
-      "Rest": 15,
-      "Recovery": 12,
-      "Intervals": 3,
-      "Easy": 4,
-      "Long": 1
-    }
-  },
-  {
-    "id": "pfitz_55_recovery_4th",
-    "name": "Marathon Up to 55 Miles per Week Recovery (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 38,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      13.5,
-      21.0,
-      26.0,
-      30.0,
-      35.5
-    ],
-    "typeCounts": {
-      "Rest": 15,
-      "Recovery": 12,
-      "Intervals": 3,
-      "Easy": 4,
-      "Long": 1
-    }
-  },
-  {
-    "id": "pfitz_70_recovery",
-    "name": "Marathon 55 to 70 Miles per Week Recovery (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 41,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      15,
-      24,
-      31,
-      36,
-      41
-    ],
-    "typeCounts": {
-      "Rest": 13,
-      "Recovery": 14,
-      "Intervals": 3,
-      "Easy": 3,
-      "Long": 2
-    }
-  },
-  {
-    "id": "pfitz_70_recovery_4th",
-    "name": "Marathon 55 to 70 Miles per Week Recovery (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 44,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      13.5,
-      22.5,
-      30.5,
-      35.5,
-      41.0
-    ],
-    "typeCounts": {
-      "Rest": 13,
-      "Recovery": 13,
-      "Easy": 3,
-      "Intervals": 4,
-      "Long": 2
-    }
-  },
-  {
-    "id": "pfitz_85_recovery",
-    "name": "Marathon 70 to 85 Miles per Week Recovery (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 50,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      16,
-      31,
-      36,
-      42,
-      50
-    ],
-    "typeCounts": {
-      "Rest": 11,
-      "Recovery": 15,
-      "Easy": 4,
-      "Intervals": 3,
-      "Long": 2
-    }
-  },
-  {
-    "id": "pfitz_85_recovery_4th",
-    "name": "Marathon 70 to 85 Miles per Week Recovery (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 52,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      14.5,
-      30.5,
-      36.5,
-      41.5,
-      49.0
-    ],
-    "typeCounts": {
-      "Rest": 11,
-      "Recovery": 15,
-      "Easy": 4,
-      "Intervals": 3,
-      "Long": 2
-    }
-  },
-  {
-    "id": "pfitz_half_12_100",
-    "name": "81 to 100 Miles per Week, 12-week schedule",
-    "author": "Pfitzinger/Latter",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 100,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      81.0,
-      85.0,
-      89.0,
-      81.0,
-      93.0,
-      96.0,
-      100.0,
-      86.0,
-      95.0,
-      86.0,
-      69.0,
-      64.0
-    ],
-    "typeCounts": {
-      "Recovery": 40,
-      "Easy": 19,
-      "Tempo": 5,
-      "Intervals": 13,
-      "Long": 3,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "pfitz_half_12_47",
-    "name": "31 to 47 Miles per Week, 12-week schedule",
-    "author": "Pfitzinger/Latter",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 47,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      31.0,
-      34.0,
-      37.0,
-      32.0,
-      40.0,
-      43.0,
-      45.0,
-      38.0,
-      47.0,
-      38.0,
-      32.0,
-      32.1
-    ],
-    "typeCounts": {
-      "Rest": 28,
-      "Intervals": 13,
-      "Easy": 20,
-      "Tempo": 5,
-      "Long": 3,
-      "Recovery": 11,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "pfitz_half_12_63",
-    "name": "47 to 63 Miles per Week, 12-week schedule",
-    "author": "Pfitzinger/Latter",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 63,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      46.0,
-      49.0,
-      52.0,
-      47.0,
-      55.0,
-      58.0,
-      61.0,
-      52.0,
-      63.0,
-      52.0,
-      43.0,
-      42.0
-    ],
-    "typeCounts": {
-      "Rest": 17,
-      "Easy": 31,
-      "Tempo": 5,
-      "Intervals": 11,
-      "Long": 3,
-      "Recovery": 13,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "pfitz_half_12_84",
-    "name": "61 to 84 Miles per Week, 12-week schedule",
-    "author": "Pfitzinger/Latter",
-    "type": "HalfMarathon",
-    "weeks": 12,
-    "peakMiles": 84,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/Faster-Road-Racing-Half-Marathon/dp/1450470459",
-    "weeklyMileage": [
-      61.0,
-      65.0,
-      69.0,
-      63.0,
-      73.0,
-      77.0,
-      80.0,
-      68.0,
-      84.0,
-      68.0,
-      56.0,
-      48.0
-    ],
-    "typeCounts": {
-      "Rest": 3,
-      "Easy": 31,
-      "Tempo": 5,
-      "Recovery": 25,
-      "Intervals": 13,
-      "Long": 3,
-      "Race": 3,
-      "MP": 1
-    }
-  },
-  {
-    "id": "pfitz_more_than_85_recovery",
-    "name": "Marathon More Than 85 Miles per Week Recovery (3rd ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 54,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      18,
-      33,
-      38,
-      45,
-      54
-    ],
-    "typeCounts": {
-      "Rest": 11,
-      "Recovery": 13,
-      "Easy": 4,
-      "Intervals": 3,
-      "Long": 3,
-      "Tempo": 1
-    }
-  },
-  {
-    "id": "pfitz_more_than_85_recovery_4th",
-    "name": "Marathon More Than 85 Miles per Week Recovery (4th ed.)",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 5,
-    "peakMiles": 56,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/dp/1718237472/",
-    "weeklyMileage": [
-      17.5,
-      32.5,
-      37.5,
-      44.5,
-      53.0
-    ],
-    "typeCounts": {
-      "Rest": 11,
-      "Recovery": 13,
-      "Easy": 4,
-      "Intervals": 3,
-      "Long": 3,
-      "Tempo": 1
-    }
-  },
-  {
-    "id": "pfitz_multi_4",
-    "name": "Multiple Marathons, 4 Weeks Between Marathons",
-    "author": "Pfitzinger/Douglas",
-    "type": "Marathon",
-    "weeks": 4,
-    "peakMiles": 54,
-    "units": "mi",
-    "custom": false,
-    "timeBased": false,
-    "source": "https://www.amazon.com/gp/product/149256866X/",
-    "weeklyMileage": [
-      24.0,
-      38.0,
-      48.0,
-      54.2
-    ],
-    "typeCounts": {
-      "Rest": 7,
-      "Recovery": 12,
-      "Easy": 3,
-      "Intervals": 2,
-      "Long": 3,
-      "Race": 1
-    }
-  }
-];
+// ─────────────────────────────────────────────────────────────
+// TYPE LABEL EXTRACTION
+// Strip {mi:km} annotations smartly:
+//   • First {..} in a title duplicates the distance field → strip
+//   • Subsequent {..} carry embedded workout distances → show as "X mi"
+// This fixes "Marathon-pace run with at marathon pace" (was stripping {10:16})
+// and "8K–15K tune-up race (total )" (was stripping {10-14:16-23})
+// ─────────────────────────────────────────────────────────────
+function extractTypeLabel(title) {
+  let s = title
+    .replace(/\{[^}]+\}/g, '')          // strip all {..}
+    .replace(/\s+with\s+.*/i, '')       // strip "with ..."
+    .replace(/\s*;.*/i, '')             // strip "; ..."
+    .replace(/\s*\(total\s*\)/i, '')    // strip "(total)"
+    .replace(/\s*\(\s*\)\s*$/, '')      // strip empty parens
+    .replace(/\s+/g, ' ').trim();
+  const MAP = {'Rest or cross-train':'Rest/X-Train','Rest or Cross-Train':'Rest/X-Train'};
+  return MAP[s] || s || 'Run';
+}
 
-const TYPE_LABELS = {
-  Marathon:"Marathon", HalfMarathon:"Half Marathon", TenK:"10K", FiveK:"5K",
-  FifteenTen:"15K / 10 Mile", MultiDist:"Multiple Distances", Base:"Base Building", Custom:"Custom"
+function cleanNote(title, units) {
+  // Strip first {..} (duplicates distance tile), convert rest to "X mi/km"
+  let first = true;
+  let result = title.replace(/\{([^}]+)\}/g, (match, inner) => {
+    if (first) { first = false; return ''; }
+    const parts = inner.split(':');
+    const mi = parts[0].trim(), km = (parts[1]||'').trim();
+    return units === 'km' && km ? km + ' km' : mi + ' mi';
+  });
+  result = result
+    .replace(/\(total\s*\)/gi, '').replace(/\(\s*\)/g, '')
+    .replace(/\s+/g, ' ').trim();
+  return result;
+}
+
+function getTypeBucket(label) {
+  const l = label.toLowerCase();
+  if (l.startsWith('rest') && !l.includes('recovery')) return 'rest';
+  if (l.startsWith('rest/x')) return 'xtrain';
+  if (l.startsWith('recovery')) return 'recovery';
+  if (l.includes('cross') || l.includes('strength')) return 'cross';
+  if (l.includes('race') || l.includes('goal marathon') || l.includes('tune-up')) return 'race';
+  if (l.startsWith('long run') || l.includes('progression long')) return 'long';
+  if (l.startsWith('med-long') || l.startsWith('medium-long')) return 'medlong';
+  if (l.includes('marathon-pace') || l.includes('marathon pace') || l === 'mp') return 'mp';
+  if (l.startsWith('dress rehearsal')) return 'mp';
+  if ((l.includes('vo') && l.includes('max')) || l.startsWith('vo₂') || l.startsWith('v̇o')) return 'vo2';
+  if (l === 'lt' || l.startsWith('lt ') || l.includes('lactate') || l.includes('tempo')) return 'lt';
+  if (l.includes('interval') || l.includes('speed')) return 'vo2';
+  return 'easy';
+}
+
+const BUCKET_COLORS = {
+  rest:     {dark:'#5a5e66', light:'#9a9ea6'},
+  xtrain:   {dark:'#5a5e66', light:'#9a9ea6'},
+  recovery: {dark:'#b8864a', light:'#b8864a'},
+  easy:     {dark:'#4a9e6a', light:'#2e7a4e'},
+  medlong:  {dark:'#3a8e5a', light:'#1e6a3e'},
+  long:     {dark:'#2a7e4a', light:'#0e5a2e'},
+  lt:       {dark:'#d4944a', light:'#c07828'},
+  mp:       {dark:'#4a90c4', light:'#2470a8'},
+  vo2:      {dark:'#9466d4', light:'#7040b4'},
+  race:     {dark:'#d44a4a', light:'#b82828'},
+  cross:    {dark:'#7a8290', light:'#5a6270'},
 };
-const TYPE_ORDER = ["Long","Tempo","MP","Intervals","Easy","Recovery","Cross","Rest","Race"];
 
-let expandedId = null;
-let authorOrder = null; // persists the user's drag-to-reorder of author groups
-let draggedAuthor = null;
-
-function badgeClass(type){ return type; }
-
-function rowMeta(plan){
-  const parts = [plan.weeks + " weeks"];
-  parts.push(plan.timeBased ? "run/walk intervals (time-based)" : "peak " + plan.peakMiles + plan.units + "/wk");
-  return parts.join(" · ");
-}
-
-function niceMax(v){
-  if(v<=0) return 10;
-  const mag = Math.pow(10, Math.floor(Math.log10(v)));
-  const step = mag/2 || 1;
-  return Math.ceil(v/step)*step;
-}
-
-function buildBarChartSVG(weekly, taperStart){
-  const w = 600, h = 144;
-  const padL = 32, padR = 8, padT = 14, padB = 20;
-  const plotW = w - padL - padR, plotH = h - padT - padB;
-  const top = niceMax(Math.max(...weekly, 1));
-  const n = weekly.length;
-
-  const slotW = plotW / n;
-  const barW = Math.max(2, slotW * 0.6);
-  const xFor = i => padL + i*slotW + slotW/2;
-  const yFor = v => padT + plotH - (v/top)*plotH;
-
-  const gridFracs = [0, 0.25, 0.5, 0.75, 1];
-  let gridlines = "";
-  gridFracs.forEach(f=>{
-    const y = padT + plotH - f*plotH;
-    const val = Math.round(top*f);
-    gridlines += `<line class="gridline" x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}"></line>`;
-    gridlines += `<text class="axis-label" x="${padL-6}" y="${y+3}" text-anchor="end">${val}</text>`;
-  });
-
-  let bars = "", valueLabels = "";
-  weekly.forEach((v,i)=>{
-    const isTaper = i >= taperStart;
-    const cx = xFor(i);
-    const barY = yFor(v);
-    const barH = (padT + plotH) - barY;
-    bars += `<rect class="plot-bar${isTaper?" taper":""}" x="${cx - barW/2}" y="${barY}" width="${barW}" height="${Math.max(barH,1)}" rx="2"></rect>`;
-    const labelInside = barH > 16;
-    const ly = labelInside ? barY + 11 : barY - 4;
-    valueLabels += `<text class="value-label${labelInside?" inside":""}" x="${cx}" y="${ly}">${Math.round(v)}</text>`;
-  });
-
-  // x-axis labels: first, last, and a few evenly spaced in between
-  const labelCount = Math.min(n, n<=8 ? n : 6);
-  const labelStep = Math.max(1, Math.round((n-1)/(labelCount-1)));
-  let xLabels = "";
-  for(let i=0; i<n; i+=labelStep){
-    xLabels += `<text class="x-label" x="${xFor(i)}" y="${h-2}">${i+1}</text>`;
+// ─────────────────────────────────────────────────────────────
+// PLANS REGISTRY — small set embedded in calendar for now;
+// full library plans are in library.html and handed off via ?plan=
+// ─────────────────────────────────────────────────────────────
+function distStr(dist) {
+  if (dist == null) return '';
+  if (Array.isArray(dist)) {
+    if (!dist.length) return '';
+    if (dist.length === 1) return fmt(dist[0]);
+    const [lo, hi] = dist;
+    return lo === hi ? fmt(lo) : `${fmt(lo)}-${fmt(hi)}`;
   }
-  if((n-1) % labelStep !== 0){
-    xLabels += `<text class="x-label" x="${xFor(n-1)}" y="${h-2}">${n}</text>`;
-  }
-
-  return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-    ${gridlines}
-    ${bars}
-    ${valueLabels}
-    ${xLabels}
-  </svg>`;
+  return fmt(dist);
 }
+function fmt(n) { return n === Math.floor(n) ? String(n) : String(n); }
 
-function buildDetailPanel(plan){
-  const detail = document.createElement("div"); detail.className="detail";
-  const weekly = plan.weeklyMileage || [];
-
-  if(plan.timeBased){
-    const stats = document.createElement("div"); stats.className="detail-stats";
-    stats.innerHTML = `<div class="detail-stat"><div class="num">${plan.weeks}</div><div class="lbl">Total weeks</div></div>`;
-    detail.appendChild(stats);
-
-    const note = document.createElement("div"); note.className="detail-section-label";
-    note.style.textTransform = "none"; note.style.fontWeight = "600"; note.style.letterSpacing = "0";
-    note.style.fontSize = "12.5px"; note.style.marginBottom = "16px";
-    note.textContent = "This plan is prescribed in run/walk time intervals rather than distance, so there's no meaningful weekly mileage to chart.";
-    detail.appendChild(note);
-  } else {
-    const max = Math.max(...weekly, 1);
-    const min = Math.min(...weekly);
-    const maxWeek = weekly.indexOf(max)+1;
-    const minWeek = weekly.indexOf(min)+1;
-    const taperStart = Math.max(0, weekly.length - Math.max(2, Math.round(weekly.length*0.15)));
-
-    const stats = document.createElement("div"); stats.className="detail-stats";
-    stats.innerHTML = `
-      <div class="detail-stat"><div class="num">${plan.weeks}</div><div class="lbl">Total weeks</div></div>
-      <div class="detail-stat peak"><div class="num">${max.toFixed(1)} ${plan.units}</div><div class="lbl">Peak week (wk ${maxWeek})</div></div>
-      <div class="detail-stat"><div class="num">${min.toFixed(1)} ${plan.units}</div><div class="lbl">Lowest week (wk ${minWeek})</div></div>
-    `;
-    detail.appendChild(stats);
-
-    const chartLabel = document.createElement("div"); chartLabel.className="detail-section-label";
-    chartLabel.textContent = "Mileage by week";
-    detail.appendChild(chartLabel);
-
-    const chartWrap = document.createElement("div"); chartWrap.className="chart-wrap";
-    chartWrap.innerHTML = buildBarChartSVG(weekly, taperStart);
-    detail.appendChild(chartWrap);
-  }
-
-  const tcLabel = document.createElement("div"); tcLabel.className="detail-section-label";
-  tcLabel.textContent = "Workout mix";
-  detail.appendChild(tcLabel);
-
-  const tc = document.createElement("div"); tc.className="typecounts";
-  const counts = plan.typeCounts || {};
-  TYPE_ORDER.filter(t=>counts[t]).forEach(t=>{
-    const pill = document.createElement("span"); pill.className="pill";
-    pill.innerHTML = `${t}<span class="n">×${counts[t]}</span>`;
-    tc.appendChild(pill);
-  });
-  detail.appendChild(tc);
-
-  return detail;
-}
-
-function render(){
-  const main = document.getElementById("main");
-  main.innerHTML = "";
-
-  const q = document.getElementById("search").value.trim().toLowerCase();
-  const filterType = document.getElementById("filterType").value;
-
-  const filtered = library.filter(p=>{
-    if(filterType && p.type !== filterType) return false;
-    if(q && !(p.name.toLowerCase().includes(q) || p.author.toLowerCase().includes(q))) return false;
-    return true;
-  });
-
-  // group by author, but custom plans always get their own trailing section.
-  // authorOrder persists across renders (search/filter/delete) so a manual
-  // drag-to-reorder sticks; it's kept in sync with whichever authors
-  // currently exist in the full library, alphabetically for any new ones.
-  const allAuthors = [...new Set(library.filter(p=>!p.custom).map(p=>p.author))];
-  if(!authorOrder){
-    authorOrder = [...allAuthors].sort((a,b)=>a.localeCompare(b));
-  } else {
-    const newOnes = allAuthors.filter(a=>!authorOrder.includes(a)).sort((a,b)=>a.localeCompare(b));
-    authorOrder = authorOrder.filter(a=>allAuthors.includes(a)).concat(newOnes);
-  }
-
-  const authorsToShow = authorOrder.filter(author=>
-    filtered.some(p=>p.author===author && !p.custom)
-  );
-
-  authorsToShow.forEach(author=>{
-    const plans = filtered.filter(p=>p.author===author && !p.custom);
-    if(plans.length===0) return;
-    main.appendChild(buildGroup(author, plans));
-  });
-
-  // custom section always shown (even if empty), unless a search/filter actively hides it
-  const customPlans = filtered.filter(p=>p.custom);
-  const showCustomSection = !filterType || filterType==="Custom";
-  if(showCustomSection){
-    main.appendChild(buildGroup("Your custom plans", customPlans, true));
-  }
-}
-
-function buildGroup(title, plans, isCustomGroup){
-  const group = document.createElement("div"); group.className="group";
-  const head = document.createElement("div"); head.className="group-head";
-
-  if(!isCustomGroup){
-    head.classList.add("draggable");
-    head.draggable = true;
-    head.dataset.author = title;
-    head.innerHTML = `<span class="grip">⠿</span><h2>${title}</h2><span class="count">${plans.length} plan${plans.length===1?"":"s"}</span>`;
-
-    head.addEventListener("dragstart", e=>{
-      draggedAuthor = title;
-      head.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", title);
-    });
-    head.addEventListener("dragend", ()=>head.classList.remove("dragging"));
-    head.addEventListener("dragover", e=>{ e.preventDefault(); head.classList.add("drag-over"); });
-    head.addEventListener("dragleave", ()=>head.classList.remove("drag-over"));
-    head.addEventListener("drop", e=>{
-      e.preventDefault();
-      head.classList.remove("drag-over");
-      if(!draggedAuthor || draggedAuthor === title) return;
-      const from = authorOrder.indexOf(draggedAuthor);
-      const to = authorOrder.indexOf(title);
-      if(from===-1 || to===-1) return;
-      authorOrder.splice(from,1);
-      authorOrder.splice(to,0,draggedAuthor);
-      draggedAuthor = null;
-      render();
-    });
-  } else {
-    head.innerHTML = `<h2>${title}</h2><span class="count">${plans.length} plan${plans.length===1?"":"s"}</span>`;
-  }
-
-  group.appendChild(head);
-
-  if(plans.length===0 && isCustomGroup){
-    const empty = document.createElement("div"); empty.className="empty-state";
-    empty.innerHTML = `No custom plans yet. Upload a plan file, or duplicate a template below and save it as your own.`;
-    group.appendChild(empty);
-    return group;
-  }
-
-  plans.forEach(plan=>{
-    const row = document.createElement("div"); row.className="row";
-    if(plan.id===expandedId) row.classList.add("expanded");
-
-    const chevron = document.createElement("div"); chevron.className="chevron"; chevron.textContent="▶";
-
-    const badge = document.createElement("div");
-    badge.className = "badge " + badgeClass(plan.type);
-    badge.textContent = TYPE_LABELS[plan.type];
-
-    const info = document.createElement("div"); info.className="row-info";
-    info.innerHTML = `<p class="name">${plan.name}</p><div class="meta">${rowMeta(plan)}</div>`;
-
-    const actions = document.createElement("div"); actions.className="row-actions";
-    const useBtn = document.createElement("button");
-    useBtn.className="btn btn-ghost"; useBtn.textContent="Use plan";
-    useBtn.addEventListener("click", (e)=>{
-      e.stopPropagation();
-      showToast(`Opening "${plan.name}" in the calendar…`);
-      setTimeout(()=>{ window.location.href = "calendar.html?plan=" + encodeURIComponent(plan.id); }, 500);
-    });
-
-    const dupBtn = document.createElement("button");
-    dupBtn.className="btn btn-text"; dupBtn.textContent="Duplicate & edit";
-    dupBtn.addEventListener("click", (e)=>{ e.stopPropagation(); openDuplicateModal(plan); });
-
-    actions.appendChild(useBtn);
-    actions.appendChild(dupBtn);
-
-    const delBtn = document.createElement("button");
-    delBtn.className="btn btn-danger-text"; delBtn.textContent="Delete";
-    delBtn.addEventListener("click", (e)=>{
-      e.stopPropagation();
-      const confirmMsg = plan.custom
-        ? `Delete "${plan.name}"? This can't be undone.`
-        : `Remove "${plan.name}" from your library? You can always re-add it later by uploading the YAML again.`;
-      if(!window.confirm(confirmMsg)) return;
-      library = library.filter(p=>p.id!==plan.id);
-      if(expandedId===plan.id) expandedId=null;
-      render();
-      showToast(`"${plan.name}" removed`);
-    });
-    actions.appendChild(delBtn);
-
-    row.addEventListener("click", ()=>{
-      expandedId = expandedId===plan.id ? null : plan.id;
-      render();
-    });
-
-    row.appendChild(chevron);
-    row.appendChild(badge);
-    row.appendChild(info);
-    row.appendChild(actions);
-    group.appendChild(row);
-
-    if(plan.id===expandedId){
-      group.appendChild(buildDetailPanel(plan));
-    }
-  });
-
-  return group;
-}
-
-function showToast(msg){
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(()=>t.classList.remove("show"), 2600);
-}
-
-// ---- Upload / duplicate modal ----
-let pendingPlan = null; // {name, author, type, weeks, peakMiles, units, source}
-
-function openUploadModal(){
-  pendingPlan = null;
-  document.getElementById("modalTitle").textContent = "Upload a plan";
-  document.getElementById("uploadSection").style.display = "block";
-  document.getElementById("nameInput").value = "";
-  document.getElementById("preview").classList.remove("show");
-  document.getElementById("confirmBtn").disabled = true;
-  document.getElementById("modalBg").classList.add("open");
-}
-
-function openDuplicateModal(plan){
-  pendingPlan = {
-    name: plan.name + " (My Edit)",
-    author: "You",
-    type: plan.type,
-    weeks: plan.weeks,
-    peakMiles: plan.peakMiles,
-    units: plan.units,
-    source: "Duplicated from " + plan.author,
-    weeklyMileage: plan.weeklyMileage,
-    typeCounts: plan.typeCounts
-  };
-  document.getElementById("modalTitle").textContent = "Duplicate & save as new plan";
-  document.getElementById("uploadSection").style.display = "none";
-  document.getElementById("nameInput").value = pendingPlan.name;
-  document.getElementById("confirmBtn").disabled = false;
-  document.getElementById("modalBg").classList.add("open");
-}
-
-function closeModal(){
-  document.getElementById("modalBg").classList.remove("open");
-}
-
-function detectType(typeStr){
-  const t = (typeStr||"").toLowerCase();
-  if(t.includes("half")) return "HalfMarathon";
-  if(t.includes("marathon")) return "Marathon";
-  if(t.includes("10k")) return "TenK";
-  if(t.includes("5k")) return "FiveK";
-  return "Custom";
-}
-
-function distMax(dist){
-  if(dist==null) return 0;
-  if(Array.isArray(dist)) return dist[1];
-  return dist;
-}
-function distMid(dist){
-  if(dist==null) return 0;
-  if(Array.isArray(dist)) return (dist[0]+dist[1])/2;
-  return dist;
-}
-function classifyType(title){
-  const t = (title||"").toLowerCase();
-  if(t.includes("goal") && t.includes("marathon")) return "Race";
-  if(t.includes("tune-up race")) return "Race";
-  if(t.includes("rest")) return "Rest";
-  if(t.includes("marathon-pace")) return "MP";
-  if(t.includes("long run") || t.includes("med-long")) return "Long";
-  if(t.includes("recovery")) return "Recovery";
-  if(/\blt\b/.test(t)) return "Tempo";
-  if(t.includes("vo") && t.includes("max")) return "Intervals";
-  if(t.includes("gen-aerobic")) return "Easy";
-  return "Easy";
-}
-
-function computePeakMiles(schedule){
-  let peak = 0;
-  (schedule||[]).forEach(week=>{
-    const total = (week.workouts||[]).reduce((s,w)=>s+distMax(w.distance),0);
-    if(total>peak) peak = total;
-  });
-  return Math.round(peak);
-}
-
-function computeWeeklyAndCounts(schedule){
-  const weeklyMileage = [];
-  const typeCounts = {};
-  (schedule||[]).forEach(week=>{
-    let total = 0;
-    (week.workouts||[]).forEach(w=>{
-      total += distMid(w.distance);
-      const t = classifyType(w.title);
-      typeCounts[t] = (typeCounts[t]||0) + 1;
-    });
-    weeklyMileage.push(Math.round(total*10)/10);
-  });
-  return {weeklyMileage, typeCounts};
-}
-
-function parsePlanFile(text, filename){
-  let data = null;
-  try{
-    data = jsyaml.load(text);
-  }catch(e){
-    try{ data = JSON.parse(text); }catch(e2){ data = null; }
-  }
-  if(!data || !data.schedule){
-    throw new Error("Couldn't find a recognizable plan schedule in this file.");
-  }
-  const {weeklyMileage, typeCounts} = computeWeeklyAndCounts(data.schedule);
+function buildPfitzPlan() {
   return {
-    name: data.name || filename.replace(/\.(ya?ml|json)$/i,""),
-    author: "You",
-    type: detectType(data.type),
-    weeks: data.schedule.length,
-    peakMiles: computePeakMiles(data.schedule),
-    units: data.units || "mi",
-    source: data.source || "Uploaded file",
-    weeklyMileage,
-    typeCounts
+    name: 'Pfitzinger/Douglas: 55–70 mi/wk, 18-week',
+    raceDistance: 'Marathon',
+    units: 'mi',
+    weeks: PFITZ_SCHEDULE.map(week => ({
+      days: week.workouts.map(w => {
+        const label = extractTypeLabel(w.title);
+        return {
+          type:   label,
+          bucket: getTypeBucket(label),
+          dist:   distStr(w.distance),
+          note:   cleanNote(w.title, 'mi'),
+          noteKm: cleanNote(w.title, 'km'),
+          fullTitle: w.title
+        };
+      })
+    }))
   };
 }
 
-function handleFile(file){
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    const preview = document.getElementById("preview");
-    try{
-      pendingPlan = parsePlanFile(reader.result, file.name);
-      preview.classList.add("show");
-      preview.innerHTML = `<div class="pname">${pendingPlan.name}</div>
-        ${TYPE_LABELS[pendingPlan.type]} · ${pendingPlan.weeks} weeks · peak ${pendingPlan.peakMiles}${pendingPlan.units}/wk`;
-      document.getElementById("nameInput").value = pendingPlan.name;
-      document.getElementById("confirmBtn").disabled = false;
-    }catch(err){
-      pendingPlan = null;
-      preview.classList.add("show");
-      preview.innerHTML = `<span class="preview-error">${err.message}</span>`;
-      document.getElementById("confirmBtn").disabled = true;
-    }
+function buildSynth(name, raceDistance, units, weeks) {
+  const taper = Math.max(2, Math.round(weeks * 0.15));
+  return {
+    name, raceDistance, units,
+    weeks: Array.from({length: weeks}, (_, wi) => {
+      const wk = wi + 1, isTaper = wk > weeks - taper;
+      const isRace = wk === weeks;
+      const scale = isTaper ? 0.6 : 0.85 + (wi / (weeks - taper)) * 0.15;
+      const base = raceDistance === 'Marathon' ? 55 : raceDistance === 'Half Marathon' ? 30 : 20;
+      const peak = Math.min(base * scale, base);
+      return {
+        days: [
+          {type:'Rest',      bucket:'rest',     dist:'0',  note:'', noteKm:''},
+          {type:'Easy',      bucket:'easy',     dist:String(Math.round(peak*0.13)), note:'', noteKm:''},
+          {type:'Tempo',     bucket:'lt',       dist:String(Math.round(peak*0.12)), note:'', noteKm:''},
+          {type:'Easy',      bucket:'easy',     dist:String(Math.round(peak*0.11)), note:'', noteKm:''},
+          {type:'Rest',      bucket:'rest',     dist:'0',  note:'', noteKm:''},
+          {type:'Intervals', bucket:'vo2',      dist:String(Math.round(peak*0.10)), note:'', noteKm:''},
+          {type: isRace?'Race':'Long Run', bucket: isRace?'race':'long',
+           dist: isRace?(raceDistance==='Marathon'?'26.2':raceDistance==='Half Marathon'?'13.1':'3.1'):String(Math.round(peak*0.35)),
+           note: isRace?'RACE DAY':'', noteKm:''},
+        ]
+      };
+    })
   };
-  reader.readAsText(file);
 }
 
-function setupModal(){
-  document.getElementById("uploadBtn").addEventListener("click", openUploadModal);
-  document.getElementById("cancelBtn").addEventListener("click", closeModal);
+const PLANS = {
+  'pfitz-18-55-70': buildPfitzPlan,
+  'half-12wk':      () => buildSynth('Half Marathon — 12 Week', 'Half Marathon', 'mi', 12),
+  '5k-8wk':         () => buildSynth('5K — 8 Week', '5K', 'mi', 8),
+};
+const PLAN_LABELS = {
+  'pfitz-18-55-70': 'Marathon — Pfitzinger 18wk (55–70 mi/wk)',
+  'half-12wk':      'Half Marathon — 12 Week',
+  '5k-8wk':         '5K — 8 Week',
+};
 
-  const dropzone = document.getElementById("dropzone");
-  const fileInput = document.getElementById("fileInput");
-  dropzone.addEventListener("click", ()=>fileInput.click());
-  fileInput.addEventListener("change", e=>{
-    if(e.target.files[0]) handleFile(e.target.files[0]);
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let planData = null, raceDate = null, startDow = 1;
+let colorOn = false, unit = 'mi';
+let currentPlanKey = 'pfitz-18-55-70';
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+// ─────────────────────────────────────────────────────────────
+// DISTANCE UTILS
+// ─────────────────────────────────────────────────────────────
+function parseDist(raw) {
+  const s = String(raw||'').trim();
+  if (!s || s === '0') return {total:0, isTime:false};
+  if (/min|hr|:/i.test(s)) return {total:0, isTime:true};
+  const rm = s.match(/^([\d.]+)\s*[-–]\s*([\d.]+)$/);
+  if (rm) return {total:(parseFloat(rm[1])+parseFloat(rm[2]))/2, isRange:true, isTime:false};
+  const n = parseFloat(s);
+  return {total: isNaN(n)?0:n, isTime:false};
+}
+
+function convertDist(distStr, toKm) {
+  if (!toKm || !distStr) return distStr;
+  const s = String(distStr).trim();
+  if (/min|hr|:/i.test(s)) return s;
+  const rm = s.match(/^([\d.]+)\s*[-–]\s*([\d.]+)$/);
+  if (rm) {
+    const lo = (parseFloat(rm[1])*1.60934).toFixed(0);
+    const hi = (parseFloat(rm[2])*1.60934).toFixed(0);
+    return lo+'-'+hi;
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? s : (n*1.60934).toFixed(1);
+}
+
+function weekMileage(week) {
+  return week.days.reduce((s,d) => s + parseDist(d.dist).total, 0);
+}
+
+// ─────────────────────────────────────────────────────────────
+// DATE UTILS
+// ─────────────────────────────────────────────────────────────
+const DAY_NAMES_FROM = (dow) => {
+  const all = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return [...all.slice(dow), ...all.slice(0, dow)];
+};
+
+function firstWeekStart() {
+  const n = planData.weeks.length;
+  const race = new Date(raceDate + 'T00:00:00');
+  const diff = (race.getDay() - startDow + 7) % 7;
+  const finalStart = new Date(race); finalStart.setDate(race.getDate() - diff);
+  const first = new Date(finalStart); first.setDate(finalStart.getDate() - (n-1)*7);
+  return first;
+}
+
+function fmtDate(d) { return (d.getMonth()+1)+'/'+d.getDate(); }
+
+function isCurrentWeek(weekStart) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(weekStart); end.setDate(weekStart.getDate()+6);
+  return today >= weekStart && today <= end;
+}
+
+// ─────────────────────────────────────────────────────────────
+// LEGEND
+// ─────────────────────────────────────────────────────────────
+function buildLegend() {
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  const seen = new Set();
+  if (!planData) return;
+  planData.weeks.forEach(w => w.days.forEach(d => {
+    if (seen.has(d.bucket)) return;
+    seen.add(d.bucket);
+    const isDark = document.body.classList.contains('dark');
+    const col = (BUCKET_COLORS[d.bucket]||{})[isDark?'dark':'light'] || '#888';
+    const item = document.createElement('div'); item.className='item';
+    item.innerHTML = `<span class="dot" style="background:${col}"></span>${d.type}`;
+    legend.appendChild(item);
+  }));
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────
+function updateTotals(rows) {
+  const total = rows ? rows.reduce((s,r) => s + r.days.reduce((ss,d) => ss + parseDist(d.dist).total, 0), 0)
+                     : planData.weeks.reduce((s,w) => s + weekMileage(w), 0);
+  const disp = unit === 'km' ? (total * 1.60934).toFixed(1) : total.toFixed(1);
+  document.getElementById('totalMiles').textContent = disp;
+  document.getElementById('totalLbl').textContent = 'total plan ' + (unit === 'km' ? 'km' : 'miles');
+  document.querySelectorAll('.week-total-span').forEach((el, i) => {
+    const w = planData.weeks[i];
+    if (!w) return;
+    const t = weekMileage(w);
+    el.textContent = (unit==='km' ? (t*1.60934).toFixed(1) : t.toFixed(1)) + ' ' + unit;
   });
-  dropzone.addEventListener("dragover", e=>{e.preventDefault(); dropzone.classList.add("drag");});
-  dropzone.addEventListener("dragleave", ()=>dropzone.classList.remove("drag"));
-  dropzone.addEventListener("drop", e=>{
-    e.preventDefault(); dropzone.classList.remove("drag");
-    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+}
+
+function render() {
+  if (!planData || !raceDate) return;
+
+  // Header row days
+  const headerRow = document.getElementById('headerRow');
+  headerRow.innerHTML = '<th class="week-th">Week</th>';
+  DAY_NAMES_FROM(startDow).forEach(n => {
+    const th = document.createElement('th'); th.textContent = n;
+    headerRow.appendChild(th);
   });
 
-  document.getElementById("nameInput").addEventListener("input", e=>{
-    if(pendingPlan) pendingPlan.name = e.target.value;
-  });
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const start = firstWeekStart();
 
-  document.getElementById("confirmBtn").addEventListener("click", ()=>{
-    if(!pendingPlan) return;
-    const newPlan = Object.assign({}, pendingPlan, {
-      id: "custom-" + Date.now(),
-      custom: true
+  planData.weeks.forEach((week, wi) => {
+    const tr = document.createElement('tr');
+
+    // Week cell (backwards-L border)
+    const wkTd = document.createElement('td'); wkTd.className = 'week-col';
+    const wkStart = new Date(start); wkStart.setDate(start.getDate() + wi*7);
+    const wkEnd = new Date(wkStart); wkEnd.setDate(wkStart.getDate()+6);
+    if (isCurrentWeek(wkStart)) wkTd.classList.add('current-week');
+    const t = weekMileage(week);
+    const tDisp = unit==='km' ? (t*1.60934).toFixed(1) : t.toFixed(1);
+    wkTd.innerHTML = `<span class="week-num">W${wi+1}</span><span class="week-range">${fmtDate(wkStart)}–${fmtDate(wkEnd)}</span><span class="week-total week-total-span">${tDisp} ${unit}</span>`;
+    tr.appendChild(wkTd);
+
+    week.days.forEach((day, di) => {
+      const td = document.createElement('td');
+      const cell = document.createElement('div');
+      cell.className = 'day-cell bucket-' + (day.bucket||'easy');
+      cell.draggable = true;
+      if (day.fullTitle) cell.title = day.fullTitle;
+
+      // Type — styled select using plan's actual type labels
+      const planTypes = [...new Set(planData.weeks.flatMap(w => w.days.map(d => d.type)))].sort();
+      const sel = document.createElement('select'); sel.className = 'tile-type';
+      planTypes.forEach(t => {
+        const o = document.createElement('option'); o.value = t; o.textContent = t;
+        if (t === day.type) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('mousedown', e => e.stopPropagation());
+      sel.addEventListener('change', () => {
+        day.type = sel.value;
+        day.bucket = getTypeBucket(sel.value);
+        cell.className = 'day-cell bucket-' + day.bucket;
+        buildLegend();
+      });
+
+      // Distance
+      const distRow = document.createElement('div'); distRow.className = 'tile-dist-row';
+      const distInput = document.createElement('input');
+      distInput.type = 'text'; distInput.className = 'tile-dist';
+      const dispDist = unit === 'km' ? convertDist(day.dist, true) : day.dist;
+      distInput.value = dispDist || '';
+      distInput.placeholder = '0';
+      distInput.addEventListener('mousedown', e => e.stopPropagation());
+      distInput.addEventListener('input', () => {
+        // Store back in mi regardless of display unit
+        const raw = distInput.value;
+        if (unit === 'km') {
+          const rm = raw.match(/^([\d.]+)\s*[-–]\s*([\d.]+)$/);
+          if (rm) day.dist = (parseFloat(rm[1])/1.60934).toFixed(1) + '-' + (parseFloat(rm[2])/1.60934).toFixed(1);
+          else { const n = parseFloat(raw); day.dist = isNaN(n) ? raw : (n/1.60934).toFixed(2); }
+        } else {
+          day.dist = raw;
+        }
+        timeFlag.style.display = parseDist(raw).isTime ? 'inline' : 'none';
+        updateTotals();
+      });
+      const unitSpan = document.createElement('span'); unitSpan.className = 'tile-unit'; unitSpan.textContent = unit;
+      const timeFlag = document.createElement('span'); timeFlag.className = 'tile-time-flag'; timeFlag.textContent = 'time';
+      timeFlag.style.display = parseDist(day.dist).isTime ? 'inline' : 'none';
+      distRow.append(distInput, unitSpan, timeFlag);
+
+      // Note
+      const noteEl = document.createElement('textarea');
+      noteEl.className = 'tile-note'; noteEl.rows = 2;
+      const noteText = unit === 'km' ? (day.noteKm || day.note) : day.note;
+      noteEl.value = noteText || '';
+      noteEl.placeholder = 'note';
+      noteEl.addEventListener('mousedown', e => e.stopPropagation());
+      noteEl.addEventListener('input', () => { day.note = noteEl.value; });
+
+      cell.append(sel, distRow, noteEl);
+
+      // Drag & drop
+      cell.addEventListener('dragstart', e => {
+        cell.classList.add('dragging');
+        e.dataTransfer.setData('application/json', JSON.stringify({wi, di}));
+      });
+      cell.addEventListener('dragend', () => cell.classList.remove('dragging'));
+      cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('over'); });
+      cell.addEventListener('dragleave', () => cell.classList.remove('over'));
+      cell.addEventListener('drop', e => {
+        e.preventDefault(); cell.classList.remove('over');
+        const src = JSON.parse(e.dataTransfer.getData('application/json'));
+        const a = planData.weeks[src.wi].days[src.di];
+        const b = day;
+        [a.type,b.type]=[b.type,a.type]; [a.bucket,b.bucket]=[b.bucket,a.bucket];
+        [a.dist,b.dist]=[b.dist,a.dist]; [a.note,b.note]=[b.note,a.note];
+        [a.noteKm,b.noteKm]=[b.noteKm,a.noteKm];
+        render();
+      });
+
+      td.appendChild(cell);
+      tr.appendChild(td);
     });
-    library.push(newPlan);
-    closeModal();
-    render();
-    showToast(`"${newPlan.name}" added to Your custom plans`);
+    grid.appendChild(tr);
   });
 
-  document.getElementById("search").addEventListener("input", render);
-  document.getElementById("filterType").addEventListener("change", render);
-
-  const modeToggle = document.getElementById("modeToggle");
-  modeToggle.addEventListener("click", ()=>{
-    const isDark = modeToggle.classList.toggle("on");
-    document.body.classList.toggle("light", !isDark);
-  });
+  buildLegend();
+  updateTotals();
 }
 
-setupModal();
-render();
+// ─────────────────────────────────────────────────────────────
+// SETUP
+// ─────────────────────────────────────────────────────────────
+function setUnit(u) {
+  unit = u;
+  document.getElementById('unitMi').classList.toggle('on', u==='mi');
+  document.getElementById('unitKm').classList.toggle('on', u==='km');
+  render();
+}
+
+function loadPlan(key) {
+  currentPlanKey = key;
+  planData = clone(PLANS[key]());
+  render();
+}
+
+function setup() {
+  // Plan selector
+  const sel = document.getElementById('planSelect');
+  Object.entries(PLAN_LABELS).forEach(([k,v]) => {
+    const o = document.createElement('option'); o.value=k; o.textContent=v;
+    sel.appendChild(o);
+  });
+  sel.value = currentPlanKey;
+  sel.addEventListener('change', e => loadPlan(e.target.value));
+
+  // Check ?plan= param from Library
+  const urlPlan = new URLSearchParams(location.search).get('plan');
+  if (urlPlan && PLANS[urlPlan]) { currentPlanKey = urlPlan; sel.value = urlPlan; }
+
+  // Race date default ~18 weeks out
+  const di = document.getElementById('raceDate');
+  const d = new Date(); d.setDate(d.getDate() + 126);
+  di.value = d.toISOString().slice(0,10);
+  raceDate = di.value;
+  di.addEventListener('change', e => { raceDate = e.target.value; render(); });
+
+  // Week start
+  const sd = document.getElementById('startDay');
+  sd.addEventListener('change', e => { startDow = parseInt(e.target.value); render(); });
+
+  // Color toggle
+  const ct = document.getElementById('colorToggle');
+  ct.addEventListener('click', () => {
+    colorOn = !colorOn;
+    ct.classList.toggle('on', colorOn);
+    document.body.classList.toggle('colorcode', colorOn);
+    document.getElementById('legend').classList.toggle('active', colorOn);
+  });
+
+  // Dark/light mode
+  const modeBtn = document.getElementById('modeBtn');
+  modeBtn.addEventListener('click', () => {
+    const isDark = document.body.classList.toggle('dark');
+    modeBtn.textContent = isDark ? '🌙' : '☀️';
+    buildLegend();
+  });
+
+  loadPlan(currentPlanKey);
+}
+
+setup();
 </script>
 </body>
 </html>
