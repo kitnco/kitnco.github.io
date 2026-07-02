@@ -73,6 +73,30 @@ body.dark .pagenav a.active{color:#0B1410;}
 /* sun/moon toggle */
 .mode-btn{background:none;border:none;cursor:pointer;padding:5px 6px;border-radius:8px;transition:background .15s;flex-shrink:0;display:flex;align-items:center;color:var(--ink);}
 .mode-btn:hover{background:var(--accent-soft);}
+/* ── SYNC / SETTINGS ── */
+.icon-btn{position:relative;background:none;border:none;cursor:pointer;padding:5px 6px;border-radius:8px;color:var(--ink);display:flex;align-items:center;justify-content:center;}
+.icon-btn:hover{background:var(--accent-soft);}
+.sync-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--sub);border:1.5px solid var(--panel);pointer-events:none;}
+.sync-dot.synced{background:#4CAF50;}
+.sync-dot.pending,.sync-dot.syncing{background:var(--accent);animation:sdpulse 1.2s infinite;}
+.sync-dot.error{background:var(--danger);}
+@keyframes sdpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-modal{width:340px;max-width:92vw;}
+.sync-modal h3{font-size:16px;font-weight:800;margin-bottom:14px;}
+.sync-modal label{display:block;font-size:10.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:12px 0 5px;}
+.sync-modal input[type=password]{width:100%;font-family:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:2px;}
+.sync-modal .hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5;}
+.sync-modal .hint a{color:var(--accent);}
+.sync-modal .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.sync-connected{display:flex;flex-direction:column;gap:12px;}
+.sync-status-row{display:flex;align-items:center;gap:10px;}
+.sync-dot-lg{width:11px;height:11px;border-radius:50%;background:var(--sub);flex-shrink:0;}
+.sync-dot-lg.synced{background:#4CAF50;}
+.sync-dot-lg.syncing,.sync-dot-lg.pending{background:var(--accent);animation:sdpulse 1.2s infinite;}
+.sync-dot-lg.error{background:var(--danger);}
+.sync-status-txt{font-size:14px;font-weight:700;}
+.sync-sub{font-size:12.5px;color:var(--sub);line-height:1.5;}
+
 .icon-moon{display:none;}
 body.dark .icon-sun{display:none;}
 body.dark .icon-moon{display:block;}
@@ -233,6 +257,13 @@ body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#
       <a href="index.html" class="active">Calendar</a>
       <a href="library.html">Library</a>
     </nav>
+    <button class="icon-btn" id="syncBtn" title="Sync settings">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="9" r="2.5"/>
+        <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.1 3.1l1.4 1.4M13.5 13.5l1.4 1.4M3.1 14.9l1.4-1.4M13.5 4.5l1.4-1.4"/>
+      </svg>
+      <span class="sync-dot" id="syncDot"></span>
+    </button>
     <button class="expand-btn" id="expandBtn" aria-label="Show controls"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="2,4 7,10 12,4"/></svg></button>
     <button class="mode-btn" id="modeBtn" title="Toggle dark/light mode" aria-label="Toggle dark mode">
       <svg class="icon-sun" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
@@ -296,6 +327,181 @@ body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#
 </div>
 
 <script>
+// ── PERSISTENCE: GitHub Gist + localStorage ───────────────────────────────
+// Stores all app state in a private GitHub Gist (cross-device) with
+// localStorage as instant-load cache. PAT is stored per-device only.
+// ─────────────────────────────────────────────────────────────────────────
+const State = (() => {
+  const FILE = 'stride-runplan.json';
+  const DESC = 'Stride Run Plan — sync data (do not edit manually)';
+  const LS = { pat:'stride_pat', gist:'stride_gist_id', data:'stride_data' };
+
+  const DEFAULTS = {
+    v: 1,
+    prefs: { dark:false, unit:'mi', colorCoding:false },
+    library: { authorOrder:null, hiddenIds:[], customPlans:[] },
+    race: {
+      planId:'pfitz-18-55-70', raceName:'', raceDate:'', weekStartDay:1,
+      baseSchedule:null, baseMeta:null, edits:{ weeks:[] }
+    }
+  };
+
+  // Deep-merge src into defaults (defaults fill in any missing keys)
+  function merge(def, src) {
+    if (!src || typeof src !== 'object') return JSON.parse(JSON.stringify(def));
+    const out = JSON.parse(JSON.stringify(def));
+    Object.keys(src).forEach(k => {
+      if (k in out && src[k] !== null && typeof src[k]==='object' && !Array.isArray(src[k]))
+        out[k] = merge(out[k], src[k]);
+      else if (src[k] !== undefined) out[k] = src[k];
+    });
+    return out;
+  }
+
+  let _pat=null, _gistId=null, _data=null;
+  let _saveTimer=null, _status='offline';
+  const _cbs=[];
+
+  const emit = s => { _status=s; _cbs.forEach(cb=>cb(s)); };
+  const lsGet = k => { try{return JSON.parse(localStorage.getItem(k));}catch{return null;} };
+  const lsSave = () => { try{localStorage.setItem(LS.data,JSON.stringify(_data));}catch{} };
+
+  async function gh(method, path, body) {
+    const r = await fetch('https://api.github.com'+path, {
+      method,
+      headers:{
+        Authorization:'Bearer '+_pat,
+        Accept:'application/vnd.github+json',
+        'Content-Type':'application/json',
+        'X-GitHub-Api-Version':'2022-11-28'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) throw new Error('GitHub API '+r.status+' '+r.statusText);
+    return r.json();
+  }
+
+  async function loadOrCreateGist() {
+    // Try cached gist id first
+    if (_gistId) {
+      try {
+        const g = await gh('GET','/gists/'+_gistId);
+        const c = g.files[FILE]?.content;
+        return c ? JSON.parse(c) : null;
+      } catch { _gistId=null; }
+    }
+    // Search existing gists
+    const list = await gh('GET','/gists?per_page=100');
+    const found = list.find(g => g.files[FILE]);
+    if (found) {
+      _gistId = found.id;
+      localStorage.setItem(LS.gist, _gistId);
+      const g = await gh('GET','/gists/'+_gistId);
+      const c = g.files[FILE]?.content;
+      return c ? JSON.parse(c) : null;
+    }
+    // Create new private gist
+    const created = await gh('POST','/gists',{
+      description:DESC, public:false,
+      files:{ [FILE]:{ content:JSON.stringify(JSON.parse(JSON.stringify(DEFAULTS)),null,2) } }
+    });
+    _gistId = created.id;
+    localStorage.setItem(LS.gist, _gistId);
+    return JSON.parse(JSON.stringify(DEFAULTS));
+  }
+
+  async function pushGist() {
+    if (!_pat||!_gistId) return;
+    await gh('PATCH','/gists/'+_gistId,{
+      files:{ [FILE]:{ content:JSON.stringify(_data,null,2) } }
+    });
+  }
+
+  function schedulePush() {
+    lsSave();
+    emit('pending');
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(async ()=>{
+      if (!_pat) { emit('offline'); return; }
+      try { emit('syncing'); await pushGist(); emit('synced'); }
+      catch(e){ console.warn('Gist push failed:',e); emit('error'); }
+    }, 1800);
+  }
+
+  return {
+    // Call once on page load. Loads localStorage immediately,
+    // then fetches Gist in background and updates.
+    async init() {
+      _pat    = localStorage.getItem(LS.pat);
+      _gistId = localStorage.getItem(LS.gist);
+      _data   = merge(DEFAULTS, lsGet(LS.data));
+      lsSave();
+      if (!_pat) { emit('offline'); return; }
+      try {
+        emit('syncing');
+        const remote = await loadOrCreateGist();
+        if (remote) { _data = merge(DEFAULTS, remote); lsSave(); }
+        emit('synced');
+      } catch(e) { console.warn('Gist init failed:',e); emit('error'); }
+    },
+
+    get(path) {
+      return path.split('.').reduce((o,k)=>o?.[k], _data);
+    },
+
+    set(path, value) {
+      const keys=path.split('.'), last=keys.pop();
+      const node=keys.reduce((o,k)=>{ if(o[k]==null||typeof o[k]!=='object')o[k]={}; return o[k]; },_data);
+      node[last]=value;
+      schedulePush();
+    },
+
+    // Connect a PAT for the first time (or reconnect after disconnect).
+    // Validates token, finds/creates Gist, merges remote data.
+    async connect(token) {
+      _pat = token.trim();
+      localStorage.setItem(LS.pat, _pat);
+      try {
+        emit('syncing');
+        const remote = await loadOrCreateGist();
+        if (remote) { _data = merge(DEFAULTS, remote); lsSave(); }
+        emit('synced');
+        return { ok:true };
+      } catch(e) {
+        _pat=null; localStorage.removeItem(LS.pat);
+        emit('offline');
+        return { ok:false, err:e.message };
+      }
+    },
+
+    disconnect() {
+      _pat=null; _gistId=null;
+      localStorage.removeItem(LS.pat);
+      localStorage.removeItem(LS.gist);
+      emit('offline');
+    },
+
+    hasPAT()  { return !!_pat; },
+    status()  { return _status; },
+    onStatus(cb) { _cbs.push(cb); cb(_status); }
+  };
+})();
+
+
+// Convert library sched format [[label,note,dist,km],...] to calendar week format
+function schedToWeeks(sched) {
+  return sched.map(week => ({
+    days: week.map(([label, note, dist]) => ({
+      type:  label || 'Run',
+      bucket: getTypeBucket(label || ''),
+      dist:  dist || '0',
+      note:  (note && note !== label) ? note : (label||''),
+      noteKm:'',
+      fullTitle: note || label || ''
+    }))
+  }));
+}
+
 // ─────────────────────────────────────────────────────────────
 // DATA — Pfitzinger 18-week (55-70 mi) plan, from uploaded YAML
 // ─────────────────────────────────────────────────────────────
@@ -449,6 +655,15 @@ let planData = null, raceDate = null, startDow = 1;
 let colorOn = false, unit = 'mi';
 let currentPlanKey = 'pfitz-18-55-70';
 
+// Debounced save of tile edits (drag-swap or inline edit)
+let _editSaveTimer = null;
+function schedulePlanSave() {
+  clearTimeout(_editSaveTimer);
+  _editSaveTimer = setTimeout(() => {
+    if (planData) State.set('race.edits.weeks', JSON.parse(JSON.stringify(planData.weeks)));
+  }, 600);
+}
+
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
 // ─────────────────────────────────────────────────────────────
@@ -592,6 +807,7 @@ function render() {
         day.bucket = getTypeBucket(sel.value);
         cell.className = 'day-cell bucket-' + day.bucket;
         buildLegend();
+        schedulePlanSave();
       });
 
       // Distance
@@ -614,6 +830,7 @@ function render() {
         }
         timeFlag.style.display = parseDist(raw).isTime ? 'inline' : 'none';
         updateTotals();
+        schedulePlanSave();
       });
       const unitSpan = document.createElement('span'); unitSpan.className = 'tile-unit'; unitSpan.textContent = unit;
       const timeFlag = document.createElement('span'); timeFlag.className = 'tile-time-flag'; timeFlag.textContent = 'time';
@@ -627,7 +844,7 @@ function render() {
       noteEl.value = noteText || '';
       noteEl.placeholder = 'note';
       noteEl.addEventListener('mousedown', e => e.stopPropagation());
-      noteEl.addEventListener('input', () => { day.note = noteEl.value; });
+      noteEl.addEventListener('input', () => { day.note = noteEl.value; schedulePlanSave(); });
 
       cell.append(sel, distRow, noteEl);
 
@@ -648,6 +865,7 @@ function render() {
         [a.dist,b.dist]=[b.dist,a.dist]; [a.note,b.note]=[b.note,a.note];
         [a.noteKm,b.noteKm]=[b.noteKm,a.noteKm];
         render();
+        schedulePlanSave();
       });
 
       td.appendChild(cell);
@@ -667,6 +885,7 @@ function setUnit(u) {
   unit = u;
   document.getElementById('unitMi').classList.toggle('on', u==='mi');
   document.getElementById('unitKm').classList.toggle('on', u==='km');
+  State.set('prefs.unit', u);
   render();
 }
 
@@ -676,48 +895,114 @@ function loadPlan(key) {
   render();
 }
 
-function setup() {
-  // Plan selector
+async function setup() {
+  // ── Init state (localStorage immediately, Gist in background) ──────────
+  await State.init();
+
+  // ── Restore preferences ─────────────────────────────────────────────────
+  const prefs = State.get('prefs');
+  if (prefs.dark) document.body.classList.add('dark');
+  if (prefs.unit) { unit = prefs.unit; }
+  if (prefs.colorCoding) { colorOn = true; }
+
+  // ── Restore race settings ───────────────────────────────────────────────
+  const race = State.get('race');
+
+  // Plan: prefer state plan, fall back to embedded or first available
+  const statePlanId  = race.planId;
+  const hasBuiltIn   = statePlanId && PLANS[statePlanId];
+  const hasExternal  = race.baseSchedule && race.baseSchedule.length;
+  if (hasBuiltIn)   currentPlanKey = statePlanId;
+  else if (hasExternal) currentPlanKey = statePlanId; // external; loadPlan handles it
+
+  // Race date
+  if (race.raceDate) raceDate = race.raceDate;
+  else { const d=new Date(); d.setDate(d.getDate()+126); raceDate=d.toISOString().slice(0,10); }
+
+  // Week start day
+  if (race.weekStartDay !== undefined) startDow = race.weekStartDay;
+
+  // ── Build plan (and restore edits if available) ──────────────────────────
+  if (PLANS[currentPlanKey]) {
+    planData = JSON.parse(JSON.stringify(PLANS[currentPlanKey]()));
+  } else if (hasExternal) {
+    planData = {
+      name: race.baseMeta?.name || 'Loaded Plan',
+      raceDistance: race.baseMeta?.type || 'Race',
+      units: race.baseMeta?.units || 'mi',
+      weeks: schedToWeeks(race.baseSchedule)
+    };
+  } else {
+    currentPlanKey = Object.keys(PLANS)[0];
+    planData = JSON.parse(JSON.stringify(PLANS[currentPlanKey]()));
+  }
+
+  // Restore tile edits if they belong to this plan + race date
+  const edits = race.edits?.weeks;
+  const editsMatchPlan = race.planId === currentPlanKey || (hasExternal && race.planId === statePlanId);
+  if (editsMatchPlan && edits && edits.length && edits.length === planData.weeks.length) {
+    planData.weeks = edits;
+  }
+
+  // ── Wire up controls ─────────────────────────────────────────────────────
   const sel = document.getElementById('planSelect');
   Object.entries(PLAN_LABELS).forEach(([k,v]) => {
     const o = document.createElement('option'); o.value=k; o.textContent=v;
+    if (!hasBuiltIn && hasExternal && k===Object.keys(PLANS)[0]) o.textContent = race.baseMeta?.name || v;
     sel.appendChild(o);
   });
-  sel.value = currentPlanKey;
-  sel.addEventListener('change', e => loadPlan(e.target.value));
+  sel.value = PLANS[currentPlanKey] ? currentPlanKey : Object.keys(PLANS)[0];
+  sel.addEventListener('change', e => {
+    const key = e.target.value;
+    State.set('race.planId', key);
+    State.set('race.edits', { weeks:[] });
+    State.set('race.baseSchedule', null);
+    loadPlan(key);
+  });
 
-  // Check ?plan= param from Library
-  const urlPlan = new URLSearchParams(location.search).get('plan');
-  if (urlPlan && PLANS[urlPlan]) { currentPlanKey = urlPlan; sel.value = urlPlan; }
-
-  // Race date default ~18 weeks out
   const di = document.getElementById('raceDate');
-  const d = new Date(); d.setDate(d.getDate() + 126);
-  di.value = d.toISOString().slice(0,10);
-  raceDate = di.value;
-  di.addEventListener('change', e => { raceDate = e.target.value; render(); });
+  di.value = raceDate;
+  di.addEventListener('change', e => {
+    raceDate = e.target.value;
+    State.set('race.raceDate', raceDate);
+    State.set('race.edits', { weeks:[] });
+    render();
+  });
 
-  // Week start
   const sd = document.getElementById('startDay');
-  sd.addEventListener('change', e => { startDow = parseInt(e.target.value); render(); });
+  sd.value = String(startDow);
+  sd.addEventListener('change', e => {
+    startDow = parseInt(e.target.value);
+    State.set('race.weekStartDay', startDow);
+    render();
+  });
 
-  // Color toggle
+  // Race name (contenteditable)
+  const rt = document.getElementById('raceTitle');
+  if (race.raceName) rt.textContent = race.raceName;
+  rt.addEventListener('input', () => State.set('race.raceName', rt.textContent.trim()));
+
+  // Apply prefs to UI
+  document.getElementById('unitMi').classList.toggle('on', unit==='mi');
+  document.getElementById('unitKm').classList.toggle('on', unit==='km');
   const ct = document.getElementById('colorToggle');
+  if (colorOn) { ct.classList.add('on'); document.body.classList.add('colorcode'); document.getElementById('legend').classList.add('active'); }
   ct.addEventListener('click', () => {
     colorOn = !colorOn;
     ct.classList.toggle('on', colorOn);
     document.body.classList.toggle('colorcode', colorOn);
     document.getElementById('legend').classList.toggle('active', colorOn);
+    State.set('prefs.colorCoding', colorOn);
   });
 
-  // Dark/light mode
   const modeBtn = document.getElementById('modeBtn');
   modeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark');
+    const dark = document.body.classList.toggle('dark');
+    State.set('prefs.dark', dark);
     buildLegend();
   });
 
-  // Mobile expand toggle
+  // Mobile expand
   const expandBtn = document.getElementById('expandBtn');
   const r2 = document.querySelector('.topbar-r2');
   expandBtn.addEventListener('click', () => {
@@ -725,10 +1010,100 @@ function setup() {
     expandBtn.classList.toggle('open', open);
   });
 
-  loadPlan(currentPlanKey);
+  // ── Sync settings modal ──────────────────────────────────────────────────
+  const syncDot    = document.getElementById('syncDot');
+  const syncDotLg  = document.getElementById('syncDotLg');
+  const syncTxt    = document.getElementById('syncStatusTxt');
+  const LABELS = { offline:'Not connected', pending:'Saving…', syncing:'Syncing…', synced:'Synced', error:'Sync error — will retry' };
+
+  State.onStatus(s => {
+    [syncDot, syncDotLg].forEach(el => { if(el){ el.className=el.className.replace(/\b(synced|syncing|pending|error)\b/g,''); el.classList.add(s); } });
+    if (syncTxt) syncTxt.textContent = LABELS[s]||s;
+    // Show which panel in the modal
+    const connected = s!=='offline';
+    const nc=document.getElementById('syncNotConnected'), cn=document.getElementById('syncConnected');
+    if(nc) nc.style.display = connected?'none':'';
+    if(cn) cn.style.display = connected?'':'none';
+  });
+
+  document.getElementById('syncBtn').addEventListener('click', ()=>{
+    document.getElementById('syncModalBg').classList.add('open');
+  });
+  document.getElementById('syncModalBg').addEventListener('click', e=>{
+    if(e.target===document.getElementById('syncModalBg')) document.getElementById('syncModalBg').classList.remove('open');
+  });
+  document.getElementById('connectBtn').addEventListener('click', async ()=>{
+    const token = document.getElementById('patInput').value.trim();
+    const err   = document.getElementById('connectErr');
+    if (!token) { err.textContent='Please enter a token.'; err.style.display=''; return; }
+    err.style.display='none';
+    document.getElementById('connectBtn').textContent='Connecting…';
+    document.getElementById('connectBtn').disabled=true;
+    const res = await State.connect(token);
+    document.getElementById('connectBtn').textContent='Connect';
+    document.getElementById('connectBtn').disabled=false;
+    if (!res.ok) { err.textContent='Could not connect: '+res.err; err.style.display=''; }
+    else { document.getElementById('patInput').value=''; applyStateToUI(); }
+  });
+  document.getElementById('disconnectBtn').addEventListener('click', ()=>{
+    if (!confirm('Disconnect this device? Your local data stays, but changes won\'t sync until you reconnect.')) return;
+    State.disconnect();
+  });
+
+  render();
+}
+
+// Apply state back to UI after connect (re-loads remote data)
+async function applyStateToUI() {
+  const race = State.get('race');
+  if (race.raceName) document.getElementById('raceTitle').textContent = race.raceName;
+  if (race.raceDate) {
+    raceDate = race.raceDate;
+    document.getElementById('raceDate').value = raceDate;
+  }
+  if (race.weekStartDay !== undefined) {
+    startDow = race.weekStartDay;
+    document.getElementById('startDay').value = String(startDow);
+  }
+  const edits = race.edits?.weeks;
+  if (race.planId && PLANS[race.planId]) {
+    currentPlanKey = race.planId;
+    planData = JSON.parse(JSON.stringify(PLANS[currentPlanKey]()));
+    if (edits && edits.length === planData.weeks.length) planData.weeks = edits;
+  }
+  render();
 }
 
 setup();
 </script>
+
+<div class="modal-bg" id="syncModalBg">
+  <div class="modal sync-modal">
+    <h3>Sync across devices</h3>
+    <div id="syncNotConnected">
+      <p class="hint">Enter a GitHub Personal Access Token to sync your plan on any device. Only the <strong>gist</strong> scope is needed.<br>
+        <a href="https://github.com/settings/tokens/new?scopes=gist&description=Stride+Run+Plan+Sync" target="_blank">Create a token ↗</a>
+      </p>
+      <label>Token</label>
+      <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off">
+      <p id="connectErr" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Cancel</button>
+        <button class="btn btn-use" id="connectBtn">Connect</button>
+      </div>
+    </div>
+    <div id="syncConnected" class="sync-connected" style="display:none">
+      <div class="sync-status-row">
+        <div class="sync-dot-lg" id="syncDotLg"></div>
+        <span class="sync-status-txt" id="syncStatusTxt">Synced</span>
+      </div>
+      <p class="sync-sub">Syncing to a private GitHub Gist. Any device with the same token shares this data automatically.</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Close</button>
+        <button class="btn" style="color:var(--danger);border:1px solid var(--line)" id="disconnectBtn">Disconnect this device</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
