@@ -247,7 +247,60 @@ body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#
 .expand-btn svg{transition:transform .2s;}
 .expand-btn.open svg{transform:rotate(180deg);}
 
-/* ── ICAL EXPORT ── */
+/* ── RACE SWITCHER ── */
+.race-switcher-wrap{position:relative;flex-shrink:0;}
+.race-switcher{
+  display:flex;align-items:center;gap:5px;
+  background:none;border:none;cursor:pointer;padding:2px 4px;
+  border-radius:6px;font-family:inherit;color:var(--ink);
+  font-size:17px;font-weight:800;letter-spacing:-.3px;
+  max-width:260px;
+}
+.race-switcher:hover{background:var(--accent-soft);}
+.race-name-display{
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;
+}
+.race-name-display:empty::before{content:'Name your race…';color:var(--sub);font-weight:600;}
+.race-chevron{flex-shrink:0;color:var(--sub);transition:transform .15s;}
+.race-dropdown{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 6px 24px rgba(0,0,0,.12);z-index:50;min-width:240px;overflow:hidden;
+}
+.race-dropdown.open{display:block;}
+.race-name-input{
+  display:block;width:100%;font-family:inherit;font-size:14px;font-weight:700;
+  background:transparent;border:none;border-bottom:1px solid var(--line);
+  padding:12px 14px;color:var(--ink);outline:none;
+}
+.race-name-input::placeholder{color:var(--sub);}
+.race-name-input:focus{background:var(--accent-soft);}
+.race-list{max-height:180px;overflow-y:auto;}
+.race-list-row{
+  display:flex;align-items:center;gap:0;
+  border-bottom:1px solid var(--line);
+}
+.race-list-row:last-child{border-bottom:none;}
+.race-list-btn{
+  flex:1;background:none;border:none;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:600;
+  color:var(--ink);padding:10px 14px;text-align:left;
+}
+.race-list-btn:hover{background:var(--accent-soft);color:var(--accent);}
+.race-delete-btn{
+  background:none;border:none;cursor:pointer;
+  color:var(--sub);font-size:15px;font-weight:700;
+  padding:10px 12px;line-height:1;flex-shrink:0;
+}
+.race-delete-btn:hover{color:var(--danger);}
+.race-add-btn{
+  display:flex;align-items:center;gap:6px;width:100%;
+  background:none;border:none;border-top:1px solid var(--line);
+  cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:700;
+  color:var(--accent);padding:10px 14px;
+}
+.race-add-btn:hover{background:var(--accent-soft);}
+
 .week-export-btn{
   display:none;background:none;border:1px solid var(--line);border-radius:5px;
   cursor:pointer;color:var(--sub);font-size:10px;font-weight:700;
@@ -277,8 +330,20 @@ body.dark .btn-use{color:#0B1410;}
 
 <div class="topbar">
   <div class="topbar-r1">
-    <div contenteditable="true" id="raceTitle" class="race-title"
-         data-placeholder="Name your race…" spellcheck="false">Run Plan</div>
+    <div class="race-switcher-wrap">
+      <button class="race-switcher" id="raceSwitcher">
+        <span class="race-name-display" id="raceNameDisplay"></span>
+        <svg class="race-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="2,4 6,8 10,4"/></svg>
+      </button>
+      <div class="race-dropdown" id="raceDropdown">
+        <input type="text" class="race-name-input" id="raceNameInput" placeholder="Race name…" autocomplete="off">
+        <div class="race-list" id="raceList"></div>
+        <button class="race-add-btn" id="addRaceBtn">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg>
+          New race
+        </button>
+      </div>
+    </div>
     <button class="icon-btn" id="exportAllBtn" title="Export full plan to iCal">
       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="3" width="16" height="15" rx="2"/>
@@ -405,10 +470,13 @@ const State = (() => {
     v: 1,
     prefs: { dark:false, unit:'mi', colorCoding:false },
     library: { authorOrder:null, hiddenIds:[], customPlans:[] },
-    race: {
-      planId:'pfitz-18-55-70', raceName:'', raceDate:'', weekStartDay:1,
-      baseSchedule:null, baseMeta:null, edits:{ weeks:[] }
-    }
+    activeRaceId: null,
+    races: {}
+  };
+
+  const RACE_DEFAULTS = {
+    planId:'pfitz-18-55-70', raceName:'', raceDate:'', weekStartDay:1,
+    baseSchedule:null, baseMeta:null, edits:{ weeks:[] }
   };
 
   // Deep-merge src into defaults (defaults fill in any missing keys)
@@ -720,12 +788,22 @@ let planData = null, raceDate = null, startDow = 1;
 let colorOn = false, unit = 'mi';
 let currentPlanKey = 'pfitz-18-55-70';
 
+// Active race helpers — set after migration in setup()
+let activeRaceId = null;
+function getRace(path) {
+  const base = 'races.' + activeRaceId;
+  return path ? State.get(base + '.' + path) : State.get(base);
+}
+function setRace(path, value) {
+  State.set('races.' + activeRaceId + '.' + path, value);
+}
+
 // Debounced save of tile edits (drag-swap or inline edit)
 let _editSaveTimer = null;
 function schedulePlanSave() {
   clearTimeout(_editSaveTimer);
   _editSaveTimer = setTimeout(() => {
-    if (planData) State.set('race.edits.weeks', JSON.parse(JSON.stringify(planData.weeks)));
+    if (planData) setRace('edits.weeks', JSON.parse(JSON.stringify(planData.weeks)));
   }, 600);
 }
 
@@ -857,7 +935,7 @@ function render() {
     wkExBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="1" x2="7" y2="10"/><polyline points="3,7 7,11 11,7"/><line x1="1" y1="13" x2="13" y2="13"/></svg> W'+(wi+1)+' .ics';
     wkExBtn.addEventListener('click', e => {
       e.stopPropagation();
-      const raceName = document.getElementById('raceTitle').textContent.trim() || 'Run Plan';
+      const raceName = currentRaceName();
       generateIcal([planData.weeks[wi]], wi, slugify(raceName)+'-week-'+(wi+1)+'.ics');
     });
     wkTd.appendChild(wkExBtn);
@@ -992,11 +1070,15 @@ function icalDate(d) {
     + String(d.getDate()).padStart(2,'0');
 }
 
+function currentRaceName() {
+  return document.getElementById('raceNameDisplay').textContent.trim() || 'Run Plan';
+}
+
 // weeksSubset  – array of week objects to export
 // weekOffset   – index of first week in the full plan (for correct dates)
 // filename     – download filename
 function generateIcal(weeksSubset, weekOffset, filename) {
-  const raceName = document.getElementById('raceTitle').textContent.trim() || 'Run Plan';
+  const raceName = currentRaceName();
   const planStart = firstWeekStart();
   const stamp = new Date().toISOString().replace(/[-:.]/g,'').slice(0,15)+'Z';
 
@@ -1054,35 +1136,93 @@ function slugify(s) {
   return (s || 'run-plan').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g,'').toLowerCase();
 }
 
-async function setup() {
-  // ── Init state (localStorage immediately, Gist in background) ──────────
-  try { await State.init(); } catch(e) { console.warn('State.init failed:', e); }
+// ─────────────────────────────────────────────────────────────
+// RACE SWITCHER
+// ─────────────────────────────────────────────────────────────
+function openRaceDropdown() {
+  renderRaceList();
+  document.getElementById('raceDropdown').classList.add('open');
+  setTimeout(() => document.getElementById('raceNameInput').focus(), 30);
+}
+function closeRaceDropdown() {
+  document.getElementById('raceDropdown').classList.remove('open');
+}
 
-  // ── Restore preferences ─────────────────────────────────────────────────
-  const prefs = State.get('prefs');
-  if (prefs.dark) document.body.classList.add('dark');
-  if (prefs.unit) { unit = prefs.unit; }
-  if (prefs.colorCoding) { colorOn = true; }
+function renderRaceList() {
+  const races = State.get('races') || {};
+  document.getElementById('raceNameInput').value = getRace('raceName') || '';
+  const list = document.getElementById('raceList');
+  list.innerHTML = '';
+  Object.entries(races).forEach(([id, r]) => {
+    if (id === activeRaceId) return;
+    const row = document.createElement('div'); row.className = 'race-list-row';
+    const btn = document.createElement('button'); btn.className = 'race-list-btn';
+    btn.textContent = r.raceName || 'Unnamed Race';
+    btn.addEventListener('click', () => { closeRaceDropdown(); switchRace(id); });
+    const del = document.createElement('button'); del.className = 'race-delete-btn';
+    del.textContent = '×'; del.title = 'Delete race';
+    del.addEventListener('click', e => { e.stopPropagation(); deleteRace(id, r.raceName); });
+    row.append(btn, del);
+    list.appendChild(row);
+  });
+}
 
-  // ── Restore race settings ───────────────────────────────────────────────
-  const race = State.get('race');
+function switchRace(id) {
+  activeRaceId = id;
+  State.set('activeRaceId', id);
+  loadRaceIntoUI();
+}
 
-  // Plan: prefer state plan, fall back to embedded or first available
-  const statePlanId  = race.planId;
-  const hasBuiltIn   = statePlanId && PLANS[statePlanId];
-  const hasExternal  = race.baseSchedule && race.baseSchedule.length;
-  if (hasBuiltIn)   currentPlanKey = statePlanId;
-  else if (hasExternal) currentPlanKey = statePlanId; // external; loadPlan handles it
+function deleteRace(id, name) {
+  const races = State.get('races') || {};
+  if (Object.keys(races).length <= 1) { alert("Can't delete the only race."); return; }
+  if (!confirm(`Delete "${name || 'Unnamed Race'}"? This can't be undone.`)) return;
+  const updated = Object.fromEntries(Object.entries(races).filter(([k]) => k !== id));
+  State.set('races', updated);
+  if (id === activeRaceId) switchRace(Object.keys(updated)[0]);
+  else renderRaceList();
+}
+
+function createNewRace() {
+  const id = 'r' + Date.now();
+  const d = new Date(); d.setDate(d.getDate() + 126);
+  State.set('races.' + id, {
+    planId: 'pfitz-18-55-70', raceName: '', raceDate: d.toISOString().slice(0,10),
+    weekStartDay: 1, baseSchedule: null, baseMeta: null, edits: { weeks: [] }
+  });
+  closeRaceDropdown();
+  switchRace(id);
+  setTimeout(() => {
+    openRaceDropdown();
+    document.getElementById('raceNameInput').select();
+  }, 50);
+}
+
+// Load the active race from state into all UI controls + re-render
+function loadRaceIntoUI() {
+  const race = getRace() || {};
+
+  // Name display
+  document.getElementById('raceNameDisplay').textContent = race.raceName || '';
+
+  // Plan
+  const planId = race.planId || Object.keys(PLANS)[0];
+  const hasBuiltIn = planId && PLANS[planId];
+  const hasExternal = race.baseSchedule && race.baseSchedule.length;
+  currentPlanKey = hasBuiltIn ? planId : Object.keys(PLANS)[0];
+  document.getElementById('planSelect').value = currentPlanKey;
 
   // Race date
   if (race.raceDate) raceDate = race.raceDate;
-  else { const d=new Date(); d.setDate(d.getDate()+126); raceDate=d.toISOString().slice(0,10); }
+  else { const d = new Date(); d.setDate(d.getDate()+126); raceDate = d.toISOString().slice(0,10); }
+  document.getElementById('raceDate').value = raceDate;
 
   // Week start day
-  if (race.weekStartDay !== undefined) startDow = race.weekStartDay;
+  startDow = race.weekStartDay !== undefined ? race.weekStartDay : 1;
+  document.getElementById('startDay').value = String(startDow);
 
-  // ── Build plan (and restore edits if available) ──────────────────────────
-  if (PLANS[currentPlanKey]) {
+  // Build planData
+  if (hasBuiltIn) {
     planData = JSON.parse(JSON.stringify(PLANS[currentPlanKey]()));
   } else if (hasExternal) {
     planData = {
@@ -1092,56 +1232,101 @@ async function setup() {
       weeks: schedToWeeks(race.baseSchedule)
     };
   } else {
-    currentPlanKey = Object.keys(PLANS)[0];
     planData = JSON.parse(JSON.stringify(PLANS[currentPlanKey]()));
   }
 
-  // Restore tile edits if they belong to this plan + race date
+  // Restore tile edits
   const edits = race.edits?.weeks;
-  const editsMatchPlan = race.planId === currentPlanKey || (hasExternal && race.planId === statePlanId);
-  if (editsMatchPlan && edits && edits.length && edits.length === planData.weeks.length) {
+  const editsMatch = race.planId === currentPlanKey || (hasExternal && race.planId === planId);
+  if (editsMatch && edits?.length && edits.length === planData.weeks.length) {
     planData.weeks = edits;
   }
 
-  // ── Wire up controls ─────────────────────────────────────────────────────
+  render();
+}
+
+async function setup() {
+  // ── Init state ───────────────────────────────────────────────────────────
+  try { await State.init(); } catch(e) { console.warn('State.init failed:', e); }
+
+  // ── Preferences ──────────────────────────────────────────────────────────
+  const prefs = State.get('prefs') || {};
+  if (prefs.dark) document.body.classList.add('dark');
+  if (prefs.unit) unit = prefs.unit;
+  if (prefs.colorCoding) colorOn = true;
+
+  // ── Migrate old state.race → state.races ─────────────────────────────────
+  const legacyRace = State.get('race');
+  const existingRaces = State.get('races') || {};
+  if (legacyRace?.planId && Object.keys(existingRaces).length === 0) {
+    const id = 'r' + Date.now();
+    State.set('races.' + id, legacyRace);
+    State.set('activeRaceId', id);
+  }
+
+  // ── Ensure at least one race exists ──────────────────────────────────────
+  const races = State.get('races') || {};
+  if (Object.keys(races).length === 0) {
+    const id = 'r' + Date.now();
+    const d = new Date(); d.setDate(d.getDate()+126);
+    State.set('races.' + id, {
+      planId:'pfitz-18-55-70', raceName:'', raceDate: d.toISOString().slice(0,10),
+      weekStartDay:1, baseSchedule:null, baseMeta:null, edits:{weeks:[]}
+    });
+    State.set('activeRaceId', id);
+  }
+
+  // ── Set active race ───────────────────────────────────────────────────────
+  activeRaceId = State.get('activeRaceId') || Object.keys(State.get('races'))[0];
+
+  // ── Wire up plan selector ─────────────────────────────────────────────────
   const sel = document.getElementById('planSelect');
   Object.entries(PLAN_LABELS).forEach(([k,v]) => {
     const o = document.createElement('option'); o.value=k; o.textContent=v;
-    if (!hasBuiltIn && hasExternal && k===Object.keys(PLANS)[0]) o.textContent = race.baseMeta?.name || v;
     sel.appendChild(o);
   });
-  sel.value = PLANS[currentPlanKey] ? currentPlanKey : Object.keys(PLANS)[0];
   sel.addEventListener('change', e => {
     const key = e.target.value;
-    State.set('race.planId', key);
-    State.set('race.edits', { weeks:[] });
-    State.set('race.baseSchedule', null);
+    setRace('planId', key);
+    setRace('edits', { weeks:[] });
+    setRace('baseSchedule', null);
     loadPlan(key);
   });
 
-  const di = document.getElementById('raceDate');
-  di.value = raceDate;
-  di.addEventListener('change', e => {
+  // ── Race date ─────────────────────────────────────────────────────────────
+  document.getElementById('raceDate').addEventListener('change', e => {
     raceDate = e.target.value;
-    State.set('race.raceDate', raceDate);
-    State.set('race.edits', { weeks:[] });
+    setRace('raceDate', raceDate);
+    setRace('edits', { weeks:[] });
     render();
   });
 
-  const sd = document.getElementById('startDay');
-  sd.value = String(startDow);
-  sd.addEventListener('change', e => {
+  // ── Week start day ────────────────────────────────────────────────────────
+  document.getElementById('startDay').addEventListener('change', e => {
     startDow = parseInt(e.target.value);
-    State.set('race.weekStartDay', startDow);
+    setRace('weekStartDay', startDow);
     render();
   });
 
-  // Race name (contenteditable)
-  const rt = document.getElementById('raceTitle');
-  if (race.raceName) rt.textContent = race.raceName;
-  rt.addEventListener('input', () => State.set('race.raceName', rt.textContent.trim()));
+  // ── Race name input ───────────────────────────────────────────────────────
+  document.getElementById('raceNameInput').addEventListener('input', e => {
+    const name = e.target.value;
+    setRace('raceName', name);
+    document.getElementById('raceNameDisplay').textContent = name;
+  });
 
-  // Apply prefs to UI
+  // ── Race switcher dropdown ────────────────────────────────────────────────
+  document.getElementById('raceSwitcher').addEventListener('click', e => {
+    e.stopPropagation();
+    const dd = document.getElementById('raceDropdown');
+    if (dd.classList.contains('open')) closeRaceDropdown();
+    else openRaceDropdown();
+  });
+  document.getElementById('raceDropdown').addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', closeRaceDropdown);
+  document.getElementById('addRaceBtn').addEventListener('click', createNewRace);
+
+  // ── Prefs UI ──────────────────────────────────────────────────────────────
   document.getElementById('unitMi').classList.toggle('on', unit==='mi');
   document.getElementById('unitKm').classList.toggle('on', unit==='km');
   const ct = document.getElementById('colorToggle');
@@ -1154,21 +1339,19 @@ async function setup() {
     State.set('prefs.colorCoding', colorOn);
   });
 
-  const modeBtn = document.getElementById('modeBtn');
-  modeBtn.addEventListener('click', () => {
+  document.getElementById('modeBtn').addEventListener('click', () => {
     const dark = document.body.classList.toggle('dark');
     State.set('prefs.dark', dark);
     buildLegend();
   });
 
-  // Full-plan iCal export
+  // ── iCal export ───────────────────────────────────────────────────────────
   document.getElementById('exportAllBtn').addEventListener('click', () => {
     if (!planData || !raceDate) return;
-    const raceName = document.getElementById('raceTitle').textContent.trim() || 'Run Plan';
-    generateIcal(planData.weeks, 0, slugify(raceName) + '.ics');
+    generateIcal(planData.weeks, 0, slugify(currentRaceName()) + '.ics');
   });
 
-  // Mobile expand
+  // ── Mobile expand ─────────────────────────────────────────────────────────
   const expandBtn = document.getElementById('expandBtn');
   const r2 = document.querySelector('.topbar-r2');
   expandBtn.addEventListener('click', () => {
@@ -1176,68 +1359,57 @@ async function setup() {
     expandBtn.classList.toggle('open', open);
   });
 
-  // ── Sync settings modal ──────────────────────────────────────────────────
-  const syncDot    = document.getElementById('syncDot');
-  const syncDotLg  = document.getElementById('syncDotLg');
-  const syncTxt    = document.getElementById('syncStatusTxt');
+  // ── Sync modal ────────────────────────────────────────────────────────────
+  const syncDot = document.getElementById('syncDot');
+  const syncDotLg = document.getElementById('syncDotLg');
+  const syncTxt = document.getElementById('syncStatusTxt');
   const LABELS = { offline:'Not connected', pending:'Saving…', syncing:'Syncing…', synced:'Synced', error:'Sync error — will retry' };
 
   State.onStatus(s => {
-    [syncDot, syncDotLg].forEach(el => { if(el){ el.className=el.className.replace(/\b(synced|syncing|pending|error)\b/g,''); el.classList.add(s); } });
-    if (syncTxt) syncTxt.textContent = LABELS[s]||s;
-    // Show which panel in the modal
-    const connected = s!=='offline';
-    const nc=document.getElementById('syncNotConnected'), cn=document.getElementById('syncConnected');
-    if(nc) nc.style.display = connected?'none':'';
-    if(cn) cn.style.display = connected?'':'none';
+    [syncDot, syncDotLg].forEach(el => {
+      if (el) { el.className = el.className.replace(/\b(synced|syncing|pending|error)\b/g,''); el.classList.add(s); }
+    });
+    if (syncTxt) syncTxt.textContent = LABELS[s] || s;
+    const connected = s !== 'offline';
+    const nc = document.getElementById('syncNotConnected');
+    const cn = document.getElementById('syncConnected');
+    if (nc) nc.style.display = connected ? 'none' : '';
+    if (cn) cn.style.display = connected ? '' : 'none';
   });
 
-  document.getElementById('syncBtn').addEventListener('click', ()=>{
+  document.getElementById('syncBtn').addEventListener('click', () => {
     document.getElementById('syncModalBg').classList.add('open');
   });
-  document.getElementById('syncModalBg').addEventListener('click', e=>{
-    if(e.target===document.getElementById('syncModalBg')) document.getElementById('syncModalBg').classList.remove('open');
+  document.getElementById('syncModalBg').addEventListener('click', e => {
+    if (e.target === document.getElementById('syncModalBg'))
+      document.getElementById('syncModalBg').classList.remove('open');
   });
-  document.getElementById('connectBtn').addEventListener('click', async ()=>{
+  document.getElementById('connectBtn').addEventListener('click', async () => {
     const token = document.getElementById('patInput').value.trim();
-    const err   = document.getElementById('connectErr');
-    if (!token) { err.textContent='Please enter a token.'; err.style.display=''; return; }
-    err.style.display='none';
-    document.getElementById('connectBtn').textContent='Connecting…';
-    document.getElementById('connectBtn').disabled=true;
+    const err = document.getElementById('connectErr');
+    if (!token) { err.textContent = 'Please enter a token.'; err.style.display = ''; return; }
+    err.style.display = 'none';
+    document.getElementById('connectBtn').textContent = 'Connecting…';
+    document.getElementById('connectBtn').disabled = true;
     const res = await State.connect(token);
-    document.getElementById('connectBtn').textContent='Connect';
-    document.getElementById('connectBtn').disabled=false;
-    if (!res.ok) { err.textContent='Could not connect: '+res.err; err.style.display=''; }
-    else { document.getElementById('patInput').value=''; applyStateToUI(); }
+    document.getElementById('connectBtn').textContent = 'Connect';
+    document.getElementById('connectBtn').disabled = false;
+    if (!res.ok) { err.textContent = 'Could not connect: ' + res.err; err.style.display = ''; }
+    else { document.getElementById('patInput').value = ''; applyStateToUI(); }
   });
-  document.getElementById('disconnectBtn').addEventListener('click', ()=>{
-    if (!confirm('Disconnect this device? Your local data stays, but changes won\'t sync until you reconnect.')) return;
+  document.getElementById('disconnectBtn').addEventListener('click', () => {
+    if (!confirm("Disconnect this device? Your local data stays, but changes won't sync until you reconnect.")) return;
     State.disconnect();
   });
 
-  render();
+  // ── Load active race and render ───────────────────────────────────────────
+  loadRaceIntoUI();
 }
 
-// Apply state back to UI after connect (re-loads remote data)
+// Re-apply full state to UI (called after Gist connect)
 async function applyStateToUI() {
-  const race = State.get('race');
-  if (race.raceName) document.getElementById('raceTitle').textContent = race.raceName;
-  if (race.raceDate) {
-    raceDate = race.raceDate;
-    document.getElementById('raceDate').value = raceDate;
-  }
-  if (race.weekStartDay !== undefined) {
-    startDow = race.weekStartDay;
-    document.getElementById('startDay').value = String(startDow);
-  }
-  const edits = race.edits?.weeks;
-  if (race.planId && PLANS[race.planId]) {
-    currentPlanKey = race.planId;
-    planData = JSON.parse(JSON.stringify(PLANS[currentPlanKey]()));
-    if (edits && edits.length === planData.weeks.length) planData.weeks = edits;
-  }
-  render();
+  activeRaceId = State.get('activeRaceId') || Object.keys(State.get('races') || {})[0];
+  if (activeRaceId) loadRaceIntoUI();
 }
 
 setup();
