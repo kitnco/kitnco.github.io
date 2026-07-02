@@ -247,6 +247,17 @@ body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#
 .expand-btn svg{transition:transform .2s;}
 .expand-btn.open svg{transform:rotate(180deg);}
 
+/* ── ICAL EXPORT ── */
+.week-export-btn{
+  display:none;background:none;border:1px solid var(--line);border-radius:5px;
+  cursor:pointer;color:var(--sub);font-size:10px;font-weight:700;
+  padding:2px 6px;margin-top:6px;align-items:center;gap:3px;
+  white-space:nowrap;transition:color .1s,border-color .1s;
+}
+.week-col:hover .week-export-btn{display:inline-flex;}
+.week-export-btn:hover{color:var(--accent);border-color:var(--accent);}
+
+
 /* ── MODAL OVERLAY ── */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
@@ -268,6 +279,16 @@ body.dark .btn-use{color:#0B1410;}
   <div class="topbar-r1">
     <div contenteditable="true" id="raceTitle" class="race-title"
          data-placeholder="Name your race…" spellcheck="false">Run Plan</div>
+    <button class="icon-btn" id="exportAllBtn" title="Export full plan to iCal">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="16" height="15" rx="2"/>
+        <line x1="2" y1="8" x2="18" y2="8"/>
+        <line x1="6" y1="1" x2="6" y2="5"/>
+        <line x1="14" y1="1" x2="14" y2="5"/>
+        <line x1="10" y1="12" x2="10" y2="17"/>
+        <polyline points="7,14 10,17 13,14"/>
+      </svg>
+    </button>
     <nav class="pagenav">
       <a href="index.html" class="active">Calendar</a>
       <a href="library.html">Library</a>
@@ -828,6 +849,18 @@ function render() {
     const t = weekMileage(week);
     const tDisp = unit==='km' ? (t*1.60934).toFixed(1) : t.toFixed(1);
     wkTd.innerHTML = `<span class="week-num">W${wi+1}</span><span class="week-range">${fmtDate(wkStart)}–${fmtDate(wkEnd)}</span><span class="week-total week-total-span">${tDisp} ${unit}</span>`;
+
+    // Per-week iCal export button (visible on hover)
+    const wkExBtn = document.createElement('button');
+    wkExBtn.className = 'week-export-btn';
+    wkExBtn.title = `Export week ${wi+1} to iCal`;
+    wkExBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="1" x2="7" y2="10"/><polyline points="3,7 7,11 11,7"/><line x1="1" y1="13" x2="13" y2="13"/></svg> W'+(wi+1)+' .ics';
+    wkExBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const raceName = document.getElementById('raceTitle').textContent.trim() || 'Run Plan';
+      generateIcal([planData.weeks[wi]], wi, slugify(raceName)+'-week-'+(wi+1)+'.ics');
+    });
+    wkTd.appendChild(wkExBtn);
     tr.appendChild(wkTd);
 
     week.days.forEach((day, di) => {
@@ -939,6 +972,88 @@ function loadPlan(key) {
   render();
 }
 
+// ─────────────────────────────────────────────────────────────
+// ICAL EXPORT
+// ─────────────────────────────────────────────────────────────
+const REST_BUCKETS = new Set(['rest','xtrain']);
+
+function escIcal(s) {
+  return String(s || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g,  '\\;')
+    .replace(/,/g,  '\\,')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '');
+}
+
+function icalDate(d) {
+  return d.getFullYear()
+    + String(d.getMonth()+1).padStart(2,'0')
+    + String(d.getDate()).padStart(2,'0');
+}
+
+// weeksSubset  – array of week objects to export
+// weekOffset   – index of first week in the full plan (for correct dates)
+// filename     – download filename
+function generateIcal(weeksSubset, weekOffset, filename) {
+  const raceName = document.getElementById('raceTitle').textContent.trim() || 'Run Plan';
+  const planStart = firstWeekStart();
+  const stamp = new Date().toISOString().replace(/[-:.]/g,'').slice(0,15)+'Z';
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Stride Run Plan//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:' + escIcal(raceName),
+  ];
+
+  weeksSubset.forEach((week, i) => {
+    const wi = weekOffset + i;
+    week.days.forEach((day, di) => {
+      if (REST_BUCKETS.has(day.bucket)) return;   // skip rest days
+      if (!day.dist || day.dist === '0') return;  // skip zero-distance
+
+      const date = new Date(planStart);
+      date.setDate(planStart.getDate() + wi*7 + di);
+      const nextDay = new Date(date);
+      nextDay.setDate(date.getDate() + 1);
+
+      const dist = unit === 'km'
+        ? convertDist(day.dist, true) + ' km'
+        : day.dist + ' mi';
+      const summary = `${day.type} — ${dist}`;
+      const note = (unit === 'km' ? (day.noteKm || day.note) : day.note) || '';
+
+      lines.push(
+        'BEGIN:VEVENT',
+        'UID:stride-w'+(wi+1)+'-d'+(di+1)+'@kitnco',
+        'DTSTAMP:'+stamp,
+        'DTSTART;VALUE=DATE:'+icalDate(date),
+        'DTEND;VALUE=DATE:'+icalDate(nextDay),
+        'SUMMARY:'+escIcal(summary),
+      );
+      if (note) lines.push('DESCRIPTION:'+escIcal(note));
+      lines.push('END:VEVENT');
+    });
+  });
+
+  lines.push('END:VCALENDAR');
+
+  const blob = new Blob([lines.join('\r\n')+'\r\n'], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function slugify(s) {
+  return (s || 'run-plan').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g,'').toLowerCase();
+}
+
 async function setup() {
   // ── Init state (localStorage immediately, Gist in background) ──────────
   try { await State.init(); } catch(e) { console.warn('State.init failed:', e); }
@@ -1044,6 +1159,13 @@ async function setup() {
     const dark = document.body.classList.toggle('dark');
     State.set('prefs.dark', dark);
     buildLegend();
+  });
+
+  // Full-plan iCal export
+  document.getElementById('exportAllBtn').addEventListener('click', () => {
+    if (!planData || !raceDate) return;
+    const raceName = document.getElementById('raceTitle').textContent.trim() || 'Run Plan';
+    generateIcal(planData.weeks, 0, slugify(raceName) + '.ics');
   });
 
   // Mobile expand
