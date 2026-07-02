@@ -340,6 +340,36 @@ body.dark .btn-use{color:#0B1410;}
   </div>
 </div>
 
+<!-- Modal must live before <script> so getElementById finds it when setup() runs -->
+<div class="modal-bg" id="syncModalBg">
+  <div class="modal sync-modal">
+    <h3>Sync across devices</h3>
+    <div id="syncNotConnected">
+      <p class="hint">Enter a GitHub Personal Access Token to sync your plan on any device. Only the <strong>gist</strong> scope is needed.<br>
+        <a href="https://github.com/settings/tokens/new?scopes=gist&description=Stride+Run+Plan+Sync" target="_blank">Create a token ↗</a>
+      </p>
+      <label>Token</label>
+      <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off">
+      <p id="connectErr" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Cancel</button>
+        <button class="btn btn-use" id="connectBtn">Connect</button>
+      </div>
+    </div>
+    <div id="syncConnected" class="sync-connected" style="display:none">
+      <div class="sync-status-row">
+        <div class="sync-dot-lg" id="syncDotLg"></div>
+        <span class="sync-status-txt" id="syncStatusTxt">Synced</span>
+      </div>
+      <p class="sync-sub">Syncing to a private GitHub Gist. Any device with the same token shares this data automatically.</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Close</button>
+        <button class="btn" style="color:var(--danger);border:1px solid var(--line)" id="disconnectBtn">Disconnect this device</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── PERSISTENCE: GitHub Gist + localStorage ───────────────────────────────
 // Stores all app state in a private GitHub Gist (cross-device) with
@@ -1090,34 +1120,5 @@ async function applyStateToUI() {
 
 setup();
 </script>
-
-<div class="modal-bg" id="syncModalBg">
-  <div class="modal sync-modal">
-    <h3>Sync across devices</h3>
-    <div id="syncNotConnected">
-      <p class="hint">Enter a GitHub Personal Access Token to sync your plan on any device. Only the <strong>gist</strong> scope is needed.<br>
-        <a href="https://github.com/settings/tokens/new?scopes=gist&description=Stride+Run+Plan+Sync" target="_blank">Create a token ↗</a>
-      </p>
-      <label>Token</label>
-      <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off">
-      <p id="connectErr" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></p>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Cancel</button>
-        <button class="btn btn-use" id="connectBtn">Connect</button>
-      </div>
-    </div>
-    <div id="syncConnected" class="sync-connected" style="display:none">
-      <div class="sync-status-row">
-        <div class="sync-dot-lg" id="syncDotLg"></div>
-        <span class="sync-status-txt" id="syncStatusTxt">Synced</span>
-      </div>
-      <p class="sync-sub">Syncing to a private GitHub Gist. Any device with the same token shares this data automatically.</p>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Close</button>
-        <button class="btn" style="color:var(--danger);border:1px solid var(--line)" id="disconnectBtn">Disconnect this device</button>
-      </div>
-    </div>
-  </div>
-</div>
 </body>
 </html>
