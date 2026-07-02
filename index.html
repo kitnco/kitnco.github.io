@@ -187,8 +187,11 @@ td.week-col.current-week{
 }
 
 /* Color buckets (applied when body.colorcode) */
-/* Color coding — Long/Med-long: border accent only (no background fill).
-   Tempo/MP/VO2/Race: subtle tint. Rest vs Recovery: clearly different tints. */
+body.colorcode .bucket-rest{background:var(--c-rest);opacity:.85;}
+body.colorcode .bucket-xtrain{background:var(--c-rest);opacity:.75;}
+body.colorcode .bucket-cross{background:var(--c-rest);opacity:.75;}
+body.colorcode .bucket-recovery{background:var(--c-recovery);}
+body.colorcode .bucket-easy{background:var(--c-easy);}
 body.colorcode .bucket-long{border-color:var(--accent);border-width:2px;}
 body.colorcode .bucket-long .tile-type{color:var(--accent);}
 body.colorcode .bucket-medlong{border-color:var(--c-medlong-border,#1a8a8a);border-width:2px;}
@@ -197,8 +200,6 @@ body.colorcode .bucket-lt{background:var(--c-lt);}
 body.colorcode .bucket-mp{background:var(--c-mp);border-color:var(--accent);border-width:2px;}
 body.colorcode .bucket-mp .tile-type{color:var(--accent);}
 body.colorcode .bucket-vo2{background:var(--c-vo2);}
-body.colorcode .bucket-rest{background:var(--c-rest);opacity:.85;}
-body.colorcode .bucket-recovery{background:var(--c-recovery);}
 body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#c0392b);border-width:2px;}
 body.colorcode .bucket-tuneup{background:var(--c-tuneup);border-color:#d4689a;border-width:2px;}
 body.colorcode .bucket-tuneup .tile-type{color:#b83a72;}
@@ -711,18 +712,18 @@ function getTypeBucket(label) {
 }
 
 const BUCKET_COLORS = {
-  rest:     {dark:'#5a5e66', light:'#9a9ea6'},
-  xtrain:   {dark:'#5a5e66', light:'#9a9ea6'},
-  recovery: {dark:'#b8864a', light:'#b8864a'},
-  easy:     {dark:'#4a9e6a', light:'#2e7a4e'},
-  medlong:  {dark:'#2aaeae', light:'#1a8a8a'},
-  long:     {dark:'#2a7e4a', light:'#0e5a2e'},
-  lt:       {dark:'#d4944a', light:'#c07828'},
-  mp:       {dark:'#2a9e5a', light:'#1a7a3e'},
-  vo2:      {dark:'#9466d4', light:'#7040b4'},
-  race:     {dark:'#d44a4a', light:'#b82828'},
-  tuneup:   {dark:'#d46896', light:'#b83a72'},
-  cross:    {dark:'#7a8290', light:'#5a6270'},
+  rest:     {dark:'#5a5e66', light:'#9a9ea6'},   // matches --c-rest gray
+  xtrain:   {dark:'#5a5e66', light:'#9a9ea6'},   // same as rest — both are non-run days
+  cross:    {dark:'#5a5e66', light:'#9a9ea6'},   // same as rest
+  recovery: {dark:'#6a80a8', light:'#4a6080'},   // matches --c-recovery blue-gray
+  easy:     {dark:'#4a9e6a', light:'#2e7a4e'},   // matches --c-easy green
+  medlong:  {dark:'#2aaeae', light:'#1a8a8a'},   // matches --c-medlong-border teal
+  long:     {dark:'#2a7e4a', light:'#0e5a2e'},   // matches --accent dark green
+  lt:       {dark:'#c8b020', light:'#9a8600'},   // matches --c-lt yellow family
+  mp:       {dark:'#2a9e5a', light:'#1a7a3e'},   // matches --c-mp green
+  vo2:      {dark:'#9466d4', light:'#7040b4'},   // matches --c-vo2 purple
+  race:     {dark:'#d44a4a', light:'#b82828'},   // matches --c-race red
+  tuneup:   {dark:'#d46896', light:'#b83a72'},   // matches --c-tuneup pink
 };
 
 // ─────────────────────────────────────────────────────────────
