@@ -274,6 +274,57 @@ body.dark .chart-svg .value-label.inside{fill:#0B1410;}
   .plan-row{grid-template-columns:1fr 70px;}
   .plan-stat{display:none;}
 }
+
+/* ── PLAN EDITOR ── */
+.editor-bg{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;flex-direction:column;overflow:hidden;}
+.editor-bg.open{display:flex;}
+.editor-topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;}
+.editor-back{background:none;border:none;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--sub);padding:6px 10px;border-radius:8px;flex-shrink:0;}
+.editor-back:hover{background:var(--accent-soft);color:var(--accent);}
+.editor-heading{font-size:15px;font-weight:800;flex:1;}
+.editor-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;}
+.editor-name-input{font-family:inherit;font-size:15px;font-weight:700;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 12px;min-width:180px;flex:1;}
+.editor-sel{font-family:inherit;font-size:13px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;}
+.editor-unit-toggle{display:flex;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px;}
+.editor-unit-toggle button{font-family:inherit;font-size:12px;font-weight:700;background:none;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;color:var(--sub);}
+.editor-unit-toggle button.on{background:var(--accent);color:#fff;}
+body.dark .editor-unit-toggle button.on{color:#0B1410;}
+.editor-body{flex:1;overflow-y:auto;padding:16px 20px 60px;}
+.editor-tabs-row{display:flex;gap:4px;margin-bottom:12px;}
+.editor-tab{font-family:inherit;font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--sub);cursor:pointer;}
+.editor-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+body.dark .editor-tab.active{color:#0B1410;}
+.dup-picker{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px;background:var(--panel);border-radius:10px;border:1px solid var(--line);}
+.dup-picker select{font-family:inherit;font-size:13px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;flex:1;}
+.editor-week{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.editor-week.drop-target-week{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--accent-rgb,.3,.74,.55),.15);}
+.editor-week.dragging-week{opacity:.45;}
+.editor-week-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:color-mix(in srgb, var(--panel) 70%, var(--line));user-select:none;}
+.editor-wk-handle{cursor:grab;color:var(--sub);font-size:15px;flex-shrink:0;line-height:1;}
+.editor-wk-handle:active{cursor:grabbing;}
+.editor-wk-label{font-size:13px;font-weight:800;color:var(--ink);}
+.editor-wk-mi{font-size:11.5px;font-weight:700;color:var(--accent);margin-left:2px;}
+.editor-add-day-btn{font-family:inherit;font-size:11px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:6px;padding:2px 8px;cursor:pointer;margin-left:auto;}
+.editor-del-week-btn{background:none;border:none;cursor:pointer;color:var(--sub);font-size:14px;font-weight:700;padding:2px 5px;border-radius:4px;flex-shrink:0;}
+.editor-del-week-btn:hover{color:var(--danger);}
+.editor-days{padding:5px 8px;display:flex;flex-direction:column;gap:3px;}
+.editor-day{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;background:var(--tile,var(--bg));border:1px solid var(--line);}
+.editor-day.drop-target-day{border-color:var(--accent);background:var(--accent-soft);}
+.editor-day.dragging-day{opacity:.4;}
+.editor-day-handle{cursor:grab;color:var(--sub);font-size:13px;flex-shrink:0;line-height:1;}
+.editor-day-handle:active{cursor:grabbing;}
+.editor-day-pos{font-size:10.5px;font-weight:700;color:var(--sub);width:26px;flex-shrink:0;text-align:center;}
+.editor-type-inp{font-family:inherit;font-size:12.5px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);flex:1;min-width:100px;padding:1px 0;}
+.editor-type-inp:focus{outline:none;border-bottom-color:var(--accent);}
+.editor-dist-inp{font-family:inherit;font-size:13px;font-weight:700;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);width:46px;text-align:right;padding:1px 0;}
+.editor-dist-inp:focus{outline:none;border-bottom-color:var(--accent);}
+.editor-dist-lbl{font-size:10px;color:var(--sub);font-weight:700;flex-shrink:0;width:20px;}
+.editor-note-inp{font-family:inherit;font-size:11.5px;background:transparent;border:none;color:var(--sub);flex:1.5;min-width:80px;padding:1px 0;}
+.editor-note-inp:focus{outline:none;color:var(--ink);}
+.editor-del-day-btn{background:none;border:none;cursor:pointer;color:var(--sub);font-size:13px;padding:1px 3px;border-radius:4px;flex-shrink:0;}
+.editor-del-day-btn:hover{color:var(--danger);}
+.editor-add-week-btn{display:flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:none;border-radius:10px;padding:9px 16px;cursor:pointer;margin-top:6px;}
+.editor-add-week-btn:hover{opacity:.85;}
 </style>
 </head>
 <body>
@@ -311,6 +362,10 @@ body.dark .chart-svg .value-label.inside{fill:#0B1410;}
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/></svg>
       <input type="text" id="search" placeholder="Search plans…">
     </div>
+    <button class="create-btn" id="newPlanBtn">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/></svg>
+      New Plan
+    </button>
     <button class="create-btn" id="uploadBtn">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/></svg>
       Upload Plan
@@ -336,6 +391,64 @@ body.dark .chart-svg .value-label.inside{fill:#0B1410;}
     <div class="footer-text" id="footerViewing">—</div>
   </div>
 </div>
+
+<!-- Plan Editor overlay -->
+<div class="editor-bg" id="editorBg">
+  <div class="editor-topbar">
+    <button class="editor-back" id="editorClose">← Back</button>
+    <span class="editor-heading" id="editorHeading">Plan Editor</span>
+    <button class="btn btn-use" id="editorSave">Save plan</button>
+  </div>
+  <div class="editor-meta">
+    <input type="text" class="editor-name-input" id="editorName" placeholder="Plan name…" autocomplete="off">
+    <select class="editor-sel" id="editorType">
+      <option value="Marathon">Marathon</option>
+      <option value="HalfMarathon">Half Marathon</option>
+      <option value="TenK">10K</option>
+      <option value="FiveK">5K</option>
+      <option value="FifteenTen">15K / 10 Mi</option>
+      <option value="Base">Base Building</option>
+      <option value="MultiDist">Multi Distance</option>
+    </select>
+    <div class="editor-unit-toggle">
+      <button id="editorUnitMi" class="on">mi</button>
+      <button id="editorUnitKm">km</button>
+    </div>
+  </div>
+  <div class="editor-body">
+    <div class="editor-tabs-row" id="editorTabsRow">
+      <button class="editor-tab active" id="tabBlank">Blank</button>
+      <button class="editor-tab" id="tabDuplicate">Duplicate existing</button>
+    </div>
+    <div class="dup-picker" id="dupPicker" style="display:none">
+      <select id="dupSource"></select>
+      <button class="btn btn-dup" id="dupLoadBtn">Load</button>
+    </div>
+    <div id="editorWeeks"></div>
+    <button class="editor-add-week-btn" id="editorAddWeekBtn">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
+      Add week
+    </button>
+  </div>
+</div>
+<datalist id="editorTypeSuggestions">
+  <option value="Rest or cross-train">
+  <option value="Gen-aerobic">
+  <option value="Gen-aerobic + speed">
+  <option value="Recovery">
+  <option value="Recovery + speed">
+  <option value="Med-long run">
+  <option value="Long run">
+  <option value="Endurance">
+  <option value="LT">
+  <option value="VO₂max">
+  <option value="Marathon-pace run">
+  <option value="Easy">
+  <option value="Tempo">
+  <option value="Intervals">
+  <option value="Race">
+  <option value="Dress rehearsal">
+</datalist>
 
 <!-- Upload modal -->
 <div class="modal-bg" id="modalBg">
@@ -373,10 +486,8 @@ const State = (() => {
     v: 1,
     prefs: { dark:false, unit:'mi', colorCoding:false },
     library: { authorOrder:null, hiddenIds:[], customPlans:[] },
-    race: {
-      planId:'pfitz-18-55-70', raceName:'', raceDate:'', weekStartDay:1,
-      baseSchedule:null, baseMeta:null, edits:{ weeks:[] }
-    }
+    activeRaceId: null,
+    races: {}
   };
 
   // Deep-merge src into defaults (defaults fill in any missing keys)
@@ -703,15 +814,22 @@ function buildDetailPanel(plan) {
   const useBtn = document.createElement('button'); useBtn.className='btn btn-use'; useBtn.textContent='Use this plan';
   useBtn.addEventListener('click', e => {
     e.stopPropagation();
-    State.set('race.planId', plan.id);
-    State.set('race.baseMeta', { name:plan.name, type:plan.type, units:plan.units||'mi' });
-    State.set('race.baseSchedule', plan.sched||null);
-    State.set('race.edits', { weeks:[] });
+    const rid = State.get('activeRaceId');
+    const base = rid ? 'races.' + rid : 'race';
+    State.set(base + '.planId', plan.id);
+    State.set(base + '.baseMeta', { name:plan.name, type:plan.type, units:plan.units||'mi' });
+    State.set(base + '.baseSchedule', plan.sched||null);
+    State.set(base + '.edits', { weeks:[] });
     showToast(`Opening "${plan.name}"…`);
     setTimeout(()=>{ window.location.href='index.html'; },600);
   });
   const dupBtn = document.createElement('button'); dupBtn.className='btn btn-dup'; dupBtn.textContent='Duplicate';
   dupBtn.addEventListener('click', e => { e.stopPropagation(); openDuplicateModal(plan); });
+  if (plan.custom) {
+    const editBtn = document.createElement('button'); editBtn.className='btn btn-dup'; editBtn.textContent='Edit';
+    editBtn.addEventListener('click', e => { e.stopPropagation(); openEditor(plan); });
+    actions.append(useBtn, editBtn, dupBtn);
+  } else {
   const delBtn = document.createElement('button'); delBtn.className='btn btn-del'; delBtn.textContent='Delete';
   delBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -724,7 +842,8 @@ function buildDetailPanel(plan) {
     State.set('library.customPlans', library.filter(p=>p.custom));
     render(); showToast(`"${plan.name}" removed`);
   });
-  actions.append(useBtn, dupBtn, delBtn);
+    actions.append(useBtn, dupBtn, delBtn);
+  }
   header.appendChild(actions);
   panel.appendChild(header);
 
@@ -1046,6 +1165,7 @@ document.getElementById('modeBtn').addEventListener('click', ()=>{
 });
 document.getElementById('search').addEventListener('input', render);
 document.getElementById('uploadBtn').addEventListener('click', openUploadModal);
+document.getElementById('newPlanBtn').addEventListener('click', openEditorNew);
 document.getElementById('cancelBtn').addEventListener('click', closeModal);
 
 const dropzone=document.getElementById('dropzone');
@@ -1065,6 +1185,300 @@ document.getElementById('confirmBtn').addEventListener('click',()=>{
   // Persist custom plans
   State.set('library.customPlans', library.filter(p=>p.custom));
   render(); showToast(`"${pendingPlan.name}" added to your custom plans`);
+});
+
+// ─────────────────────────────────────────────────────────────
+// PLAN EDITOR
+// ─────────────────────────────────────────────────────────────
+let editorWeeks = [];
+let editorPlan  = null;
+let editorUnit  = 'mi';
+let editorTab   = 'blank';
+const DAY_LABELS_E = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function parseDist(s) { const n = parseFloat(s); return isNaN(n) ? 0 : n; }
+
+function buildBlankWeeks(n) {
+  return Array.from({length:n}, () => ({
+    days: Array.from({length:7}, () => ({ type:'Rest or cross-train', dist:'0', distKm:'0', note:'' }))
+  }));
+}
+
+function planToEditorWeeks(plan) {
+  return (plan.sched || []).map(week => ({
+    days: week.map(([type, note, dist, distKm]) => ({
+      type: type||'', dist: dist||'0', distKm: distKm||'0', note: note||''
+    }))
+  }));
+}
+
+function editorWeeksToSched() {
+  return editorWeeks.map(week =>
+    week.days.map(d => [d.type||'', d.note||'', d.dist||'0', d.distKm||'0'])
+  );
+}
+
+function openEditorNew() {
+  editorPlan = null;
+  editorWeeks = buildBlankWeeks(12);
+  document.getElementById('editorName').value = '';
+  document.getElementById('editorType').value = 'Marathon';
+  editorUnit = 'mi';
+  document.getElementById('editorUnitMi').classList.add('on');
+  document.getElementById('editorUnitKm').classList.remove('on');
+  document.getElementById('editorTabsRow').style.display = '';
+  setEditorTab('blank');
+  document.getElementById('editorBg').classList.add('open');
+}
+
+function openEditor(plan) {
+  editorPlan = plan;
+  editorWeeks = planToEditorWeeks(plan);
+  document.getElementById('editorName').value = plan.name;
+  document.getElementById('editorType').value = plan.type || 'Marathon';
+  editorUnit = plan.units || 'mi';
+  document.getElementById('editorUnitMi').classList.toggle('on', editorUnit==='mi');
+  document.getElementById('editorUnitKm').classList.toggle('on', editorUnit==='km');
+  document.getElementById('editorTabsRow').style.display = 'none';
+  document.getElementById('dupPicker').style.display = 'none';
+  renderEditorWeeks();
+  document.getElementById('editorBg').classList.add('open');
+}
+
+function closeEditor() {
+  document.getElementById('editorBg').classList.remove('open');
+}
+
+function setEditorTab(tab) {
+  editorTab = tab;
+  document.getElementById('tabBlank').classList.toggle('active', tab==='blank');
+  document.getElementById('tabDuplicate').classList.toggle('active', tab==='duplicate');
+  const dp = document.getElementById('dupPicker');
+  if (tab === 'duplicate') {
+    dp.style.display = '';
+    buildDupSourceOptions();
+    editorWeeks = [];
+    renderEditorWeeks();
+  } else {
+    dp.style.display = 'none';
+    editorWeeks = buildBlankWeeks(12);
+    renderEditorWeeks();
+  }
+}
+
+function buildDupSourceOptions() {
+  const sel = document.getElementById('dupSource');
+  sel.innerHTML = '';
+  library.forEach(p => {
+    const o = document.createElement('option'); o.value=p.id; o.textContent=p.name;
+    sel.appendChild(o);
+  });
+}
+
+function loadDuplicateSource() {
+  const id = document.getElementById('dupSource').value;
+  const src = library.find(p => p.id === id);
+  if (!src) return;
+  editorWeeks = planToEditorWeeks(src);
+  document.getElementById('editorName').value = src.name + ' (copy)';
+  document.getElementById('editorType').value = src.type || 'Marathon';
+  editorUnit = src.units || 'mi';
+  document.getElementById('editorUnitMi').classList.toggle('on', editorUnit==='mi');
+  document.getElementById('editorUnitKm').classList.toggle('on', editorUnit==='km');
+  renderEditorWeeks();
+}
+
+function renderEditorWeeks() {
+  const container = document.getElementById('editorWeeks');
+  container.innerHTML = '';
+  editorWeeks.forEach((week, wi) => container.appendChild(buildEditorWeekEl(week, wi)));
+}
+
+function updateEditorWeekMileage(wi) {
+  const weekEls = document.querySelectorAll('.editor-week');
+  if (!weekEls[wi]) return;
+  const mi = weekEls[wi].querySelector('.editor-wk-mi');
+  if (!mi) return;
+  const wk = editorWeeks[wi];
+  if (!wk) return;
+  const total = editorUnit === 'km'
+    ? wk.days.reduce((s,d) => s+parseDist(d.distKm), 0).toFixed(1)+' km'
+    : wk.days.reduce((s,d) => s+parseDist(d.dist), 0).toFixed(1)+' mi';
+  mi.textContent = total;
+}
+
+function buildEditorWeekEl(week, wi) {
+  const el = document.createElement('div');
+  el.className = 'editor-week';
+  el.dataset.wi = String(wi);
+
+  // Header
+  const hdr = document.createElement('div'); hdr.className = 'editor-week-hdr';
+  const handle = document.createElement('span'); handle.className = 'editor-wk-handle'; handle.textContent = '⠿'; handle.title = 'Drag to reorder week';
+  const label = document.createElement('span'); label.className = 'editor-wk-label'; label.textContent = `Week ${wi+1}`;
+  const total = editorUnit === 'km'
+    ? week.days.reduce((s,d) => s+parseDist(d.distKm), 0).toFixed(1)+' km'
+    : week.days.reduce((s,d) => s+parseDist(d.dist), 0).toFixed(1)+' mi';
+  const mi = document.createElement('span'); mi.className = 'editor-wk-mi'; mi.textContent = total;
+  const addDay = document.createElement('button'); addDay.className = 'editor-add-day-btn'; addDay.textContent = '+ Day';
+  addDay.addEventListener('click', () => {
+    editorWeeks[wi].days.push({ type:'Rest or cross-train', dist:'0', distKm:'0', note:'' });
+    renderEditorWeeks();
+  });
+  const delWeek = document.createElement('button'); delWeek.className = 'editor-del-week-btn'; delWeek.textContent = '×';
+  delWeek.addEventListener('click', () => {
+    if (!confirm(`Remove Week ${wi+1}?`)) return;
+    editorWeeks.splice(wi, 1);
+    renderEditorWeeks();
+  });
+  hdr.append(handle, label, mi, addDay, delWeek);
+  el.appendChild(hdr);
+
+  // Days
+  const daysEl = document.createElement('div'); daysEl.className = 'editor-days';
+  week.days.forEach((day, di) => daysEl.appendChild(buildEditorDayEl(day, wi, di)));
+  el.appendChild(daysEl);
+
+  // Week drag (from header handle)
+  handle.addEventListener('mousedown', () => { el.draggable = true; });
+  handle.addEventListener('mouseleave', () => { el.draggable = false; });
+  el.addEventListener('dragstart', e => {
+    if (!el.draggable) { e.preventDefault(); return; }
+    e.dataTransfer.setData('stride/week', String(wi));
+    e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('dragging-week');
+  });
+  el.addEventListener('dragend', () => { el.draggable = false; el.classList.remove('dragging-week'); });
+  el.addEventListener('dragover', e => {
+    if (!e.dataTransfer.types.includes('stride/week')) return;
+    e.preventDefault(); el.classList.add('drop-target-week');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drop-target-week'));
+  el.addEventListener('drop', e => {
+    el.classList.remove('drop-target-week');
+    if (!e.dataTransfer.types.includes('stride/week')) return;
+    e.preventDefault();
+    const src = parseInt(e.dataTransfer.getData('stride/week'));
+    if (isNaN(src) || src === wi) return;
+    const moved = editorWeeks.splice(src, 1)[0];
+    editorWeeks.splice(wi > src ? wi-1 : wi, 0, moved);
+    renderEditorWeeks();
+  });
+
+  return el;
+}
+
+function buildEditorDayEl(day, wi, di) {
+  const el = document.createElement('div');
+  el.className = 'editor-day';
+  el.draggable = true;
+
+  const handle = document.createElement('span'); handle.className = 'editor-day-handle'; handle.textContent = '⠿';
+  const pos = document.createElement('span'); pos.className = 'editor-day-pos'; pos.textContent = DAY_LABELS_E[di] || `D${di+1}`;
+
+  const typeInp = document.createElement('input');
+  typeInp.type = 'text'; typeInp.className = 'editor-type-inp';
+  typeInp.value = day.type; typeInp.placeholder = 'Workout type';
+  typeInp.setAttribute('list', 'editorTypeSuggestions');
+  typeInp.addEventListener('input', () => { editorWeeks[wi].days[di].type = typeInp.value; });
+
+  const distInp = document.createElement('input');
+  distInp.type = 'text'; distInp.className = 'editor-dist-inp';
+  distInp.value = editorUnit === 'km' ? day.distKm : day.dist;
+  distInp.addEventListener('input', () => {
+    const n = parseFloat(distInp.value);
+    if (editorUnit === 'km') {
+      editorWeeks[wi].days[di].distKm = distInp.value;
+      editorWeeks[wi].days[di].dist = isNaN(n) ? '0' : (n/1.60934).toFixed(1);
+    } else {
+      editorWeeks[wi].days[di].dist = distInp.value;
+      editorWeeks[wi].days[di].distKm = isNaN(n) ? '0' : (n*1.60934).toFixed(1);
+    }
+    updateEditorWeekMileage(wi);
+  });
+
+  const distLbl = document.createElement('span'); distLbl.className = 'editor-dist-lbl'; distLbl.textContent = editorUnit;
+
+  const noteInp = document.createElement('input');
+  noteInp.type = 'text'; noteInp.className = 'editor-note-inp';
+  noteInp.value = day.note; noteInp.placeholder = 'Note…';
+  noteInp.addEventListener('input', () => { editorWeeks[wi].days[di].note = noteInp.value; });
+
+  const delBtn = document.createElement('button'); delBtn.className = 'editor-del-day-btn'; delBtn.textContent = '×';
+  delBtn.addEventListener('click', () => { editorWeeks[wi].days.splice(di, 1); renderEditorWeeks(); });
+
+  el.append(handle, pos, typeInp, distInp, distLbl, noteInp, delBtn);
+
+  // Day drag
+  el.addEventListener('dragstart', e => {
+    e.stopPropagation();
+    e.dataTransfer.setData('stride/day', JSON.stringify({wi,di}));
+    e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('dragging-day');
+  });
+  el.addEventListener('dragend', () => el.classList.remove('dragging-day'));
+  el.addEventListener('dragover', e => {
+    if (!e.dataTransfer.types.includes('stride/day')) return;
+    e.preventDefault(); e.stopPropagation(); el.classList.add('drop-target-day');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drop-target-day'));
+  el.addEventListener('drop', e => {
+    el.classList.remove('drop-target-day');
+    if (!e.dataTransfer.types.includes('stride/day')) return;
+    e.preventDefault(); e.stopPropagation();
+    const src = JSON.parse(e.dataTransfer.getData('stride/day'));
+    if (src.wi === wi && src.di === di) return;
+    const moved = editorWeeks[src.wi].days.splice(src.di, 1)[0];
+    const targetDi = src.wi === wi && src.di < di ? di-1 : di;
+    editorWeeks[wi].days.splice(targetDi, 0, moved);
+    renderEditorWeeks();
+  });
+
+  return el;
+}
+
+function saveEditorPlan() {
+  const name = document.getElementById('editorName').value.trim();
+  if (!name) { document.getElementById('editorName').focus(); showToast('Enter a plan name first'); return; }
+  if (!editorWeeks.length) { showToast('Add at least one week first'); return; }
+  const type = document.getElementById('editorType').value;
+  const sched = editorWeeksToSched();
+  const weeklyMileage = sched.map(week => week.reduce((s,[,,dist]) => s+(parseFloat(dist)||0), 0));
+  const peakMiles = Math.round(Math.max(...weeklyMileage, 0));
+  const id = editorPlan ? editorPlan.id : 'custom_' + Date.now();
+  const plan = { id, name, author:'Custom', type, weeks:sched.length, peakMiles, units:editorUnit, custom:true, timeBased:false, weeklyMileage, typeCounts:{}, sched };
+  if (editorPlan) {
+    library = library.map(p => p.id === id ? plan : p);
+  } else {
+    library.push(plan);
+  }
+  State.set('library.customPlans', library.filter(p=>p.custom));
+  closeEditor();
+  render();
+  showToast(`"${name}" saved`);
+}
+
+// Wire up editor
+document.getElementById('editorClose').addEventListener('click', closeEditor);
+document.getElementById('editorSave').addEventListener('click', saveEditorPlan);
+document.getElementById('tabBlank').addEventListener('click', () => setEditorTab('blank'));
+document.getElementById('tabDuplicate').addEventListener('click', () => setEditorTab('duplicate'));
+document.getElementById('dupLoadBtn').addEventListener('click', loadDuplicateSource);
+document.getElementById('editorAddWeekBtn').addEventListener('click', () => {
+  editorWeeks.push({ days: Array.from({length:7}, () => ({ type:'Rest or cross-train', dist:'0', distKm:'0', note:'' })) });
+  renderEditorWeeks();
+});
+document.getElementById('editorUnitMi').addEventListener('click', () => {
+  editorUnit = 'mi';
+  document.getElementById('editorUnitMi').classList.add('on');
+  document.getElementById('editorUnitKm').classList.remove('on');
+  renderEditorWeeks();
+});
+document.getElementById('editorUnitKm').addEventListener('click', () => {
+  editorUnit = 'km';
+  document.getElementById('editorUnitKm').classList.add('on');
+  document.getElementById('editorUnitMi').classList.remove('on');
+  renderEditorWeeks();
 });
 
 render();
