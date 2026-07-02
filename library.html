@@ -304,25 +304,67 @@ body.dark .editor-tab.active{color:#0B1410;}
 .editor-wk-handle:active{cursor:grabbing;}
 .editor-wk-label{font-size:13px;font-weight:800;color:var(--ink);}
 .editor-wk-mi{font-size:11.5px;font-weight:700;color:var(--accent);margin-left:2px;}
-.editor-add-day-btn{font-family:inherit;font-size:11px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:6px;padding:2px 8px;cursor:pointer;margin-left:auto;}
 .editor-del-week-btn{background:none;border:none;cursor:pointer;color:var(--sub);font-size:14px;font-weight:700;padding:2px 5px;border-radius:4px;flex-shrink:0;}
 .editor-del-week-btn:hover{color:var(--danger);}
-.editor-days{padding:5px 8px;display:flex;flex-direction:column;gap:3px;}
-.editor-day{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;background:var(--tile,var(--bg));border:1px solid var(--line);}
+.editor-days{display:flex;flex-direction:row;gap:4px;padding:6px 8px;overflow-x:auto;}
+.editor-day{
+  flex:1;min-width:76px;max-width:130px;min-height:86px;
+  display:flex;flex-direction:column;gap:2px;
+  padding:7px 6px 5px;border-radius:8px;
+  background:var(--tile,var(--bg));border:1px solid var(--line);
+  position:relative;cursor:default;
+  transition:border-color .1s;
+}
+.editor-day:hover{border-color:var(--accent);}
 .editor-day.drop-target-day{border-color:var(--accent);background:var(--accent-soft);}
 .editor-day.dragging-day{opacity:.4;}
-.editor-day-handle{cursor:grab;color:var(--sub);font-size:13px;flex-shrink:0;line-height:1;}
+.editor-day-handle{
+  position:absolute;top:3px;right:3px;
+  cursor:grab;color:var(--sub);font-size:10px;opacity:0;
+  transition:opacity .15s;line-height:1;
+}
+.editor-day:hover .editor-day-handle{opacity:.7;}
 .editor-day-handle:active{cursor:grabbing;}
-.editor-day-pos{font-size:10.5px;font-weight:700;color:var(--sub);width:26px;flex-shrink:0;text-align:center;}
-.editor-type-inp{font-family:inherit;font-size:12.5px;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);flex:1;min-width:100px;padding:1px 0;}
-.editor-type-inp:focus{outline:none;border-bottom-color:var(--accent);}
-.editor-dist-inp{font-family:inherit;font-size:13px;font-weight:700;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--ink);width:46px;text-align:right;padding:1px 0;}
-.editor-dist-inp:focus{outline:none;border-bottom-color:var(--accent);}
-.editor-dist-lbl{font-size:10px;color:var(--sub);font-weight:700;flex-shrink:0;width:20px;}
-.editor-note-inp{font-family:inherit;font-size:11.5px;background:transparent;border:none;color:var(--sub);flex:1.5;min-width:80px;padding:1px 0;}
+.editor-del-day-btn{
+  position:absolute;top:1px;left:3px;
+  background:none;border:none;cursor:pointer;
+  color:var(--sub);font-size:11px;font-weight:700;
+  padding:0;opacity:0;transition:opacity .15s;line-height:1;
+}
+.editor-day:hover .editor-del-day-btn{opacity:.6;}
+.editor-del-day-btn:hover{color:var(--danger);opacity:1 !important;}
+.editor-day-pos{font-size:9px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.editor-type-inp{
+  font-family:inherit;font-size:10.5px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.2px;
+  background:transparent;border:none;color:var(--ink);
+  width:100%;padding:0;resize:none;
+  overflow:hidden;
+  line-height:1.25;
+}
+.editor-type-inp:focus{outline:none;color:var(--ink);}
+.editor-dist-row-tile{display:flex;align-items:baseline;gap:2px;margin-top:auto;padding-top:3px;}
+.editor-dist-inp{
+  font-family:inherit;font-size:16px;font-weight:800;
+  background:transparent;border:none;
+  color:var(--ink);width:44px;padding:0;text-align:left;
+}
+.editor-dist-inp:focus{outline:none;color:var(--accent);}
+.editor-dist-lbl{font-size:10px;color:var(--sub);font-weight:700;flex-shrink:0;}
+.editor-note-inp{
+  font-family:inherit;font-size:9.5px;background:transparent;
+  border:none;color:var(--sub);width:100%;padding:0;
+  resize:none;overflow:hidden;
+}
 .editor-note-inp:focus{outline:none;color:var(--ink);}
-.editor-del-day-btn{background:none;border:none;cursor:pointer;color:var(--sub);font-size:13px;padding:1px 3px;border-radius:4px;flex-shrink:0;}
-.editor-del-day-btn:hover{color:var(--danger);}
+.editor-add-day-btn{
+  font-family:inherit;font-size:11px;font-weight:700;
+  color:var(--accent);background:none;border:1px dashed var(--accent);
+  border-radius:8px;padding:6px;cursor:pointer;
+  flex:1;min-width:60px;max-width:76px;min-height:86px;
+  display:flex;align-items:center;justify-content:center;
+}
+.editor-add-day-btn:hover{background:var(--accent-soft);}
 .editor-add-week-btn{display:flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:none;border-radius:10px;padding:9px 16px;cursor:pointer;margin-top:6px;}
 .editor-add-week-btn:hover{opacity:.85;}
 </style>
@@ -1320,23 +1362,27 @@ function buildEditorWeekEl(week, wi) {
     ? week.days.reduce((s,d) => s+parseDist(d.distKm), 0).toFixed(1)+' km'
     : week.days.reduce((s,d) => s+parseDist(d.dist), 0).toFixed(1)+' mi';
   const mi = document.createElement('span'); mi.className = 'editor-wk-mi'; mi.textContent = total;
-  const addDay = document.createElement('button'); addDay.className = 'editor-add-day-btn'; addDay.textContent = '+ Day';
-  addDay.addEventListener('click', () => {
-    editorWeeks[wi].days.push({ type:'Rest or cross-train', dist:'0', distKm:'0', note:'' });
-    renderEditorWeeks();
-  });
   const delWeek = document.createElement('button'); delWeek.className = 'editor-del-week-btn'; delWeek.textContent = '×';
+  delWeek.title = 'Remove week';
   delWeek.addEventListener('click', () => {
     if (!confirm(`Remove Week ${wi+1}?`)) return;
     editorWeeks.splice(wi, 1);
     renderEditorWeeks();
   });
-  hdr.append(handle, label, mi, addDay, delWeek);
+  hdr.append(handle, label, mi, delWeek);
   el.appendChild(hdr);
 
-  // Days
+  // Tiles row
   const daysEl = document.createElement('div'); daysEl.className = 'editor-days';
   week.days.forEach((day, di) => daysEl.appendChild(buildEditorDayEl(day, wi, di)));
+
+  // "+ Day" tile at end
+  const addDayTile = document.createElement('button'); addDayTile.className = 'editor-add-day-btn'; addDayTile.textContent = '+';
+  addDayTile.addEventListener('click', () => {
+    editorWeeks[wi].days.push({ type:'Rest or cross-train', dist:'0', distKm:'0', note:'' });
+    renderEditorWeeks();
+  });
+  daysEl.appendChild(addDayTile);
   el.appendChild(daysEl);
 
   // Week drag (from header handle)
@@ -1373,18 +1419,38 @@ function buildEditorDayEl(day, wi, di) {
   el.className = 'editor-day';
   el.draggable = true;
 
-  const handle = document.createElement('span'); handle.className = 'editor-day-handle'; handle.textContent = '⠿';
-  const pos = document.createElement('span'); pos.className = 'editor-day-pos'; pos.textContent = DAY_LABELS_E[di] || `D${di+1}`;
+  // Drag handle (top-right, revealed on hover via CSS)
+  const handle = document.createElement('span'); handle.className = 'editor-day-handle'; handle.textContent = '⠿'; handle.title = 'Drag';
+  el.appendChild(handle);
 
-  const typeInp = document.createElement('input');
-  typeInp.type = 'text'; typeInp.className = 'editor-type-inp';
-  typeInp.value = day.type; typeInp.placeholder = 'Workout type';
+  // Delete button (top-left, revealed on hover via CSS)
+  const delBtn = document.createElement('button'); delBtn.className = 'editor-del-day-btn'; delBtn.textContent = '×';
+  delBtn.addEventListener('click', e => { e.stopPropagation(); editorWeeks[wi].days.splice(di, 1); renderEditorWeeks(); });
+  el.appendChild(delBtn);
+
+  // Day label (Mon/Tue/etc)
+  const pos = document.createElement('div'); pos.className = 'editor-day-pos';
+  pos.textContent = DAY_LABELS_E[di] || `D${di+1}`;
+  el.appendChild(pos);
+
+  // Type input (uppercase bold, like calendar tile-type)
+  const typeInp = document.createElement('textarea');
+  typeInp.className = 'editor-type-inp';
+  typeInp.value = day.type; typeInp.rows = 2;
   typeInp.setAttribute('list', 'editorTypeSuggestions');
-  typeInp.addEventListener('input', () => { editorWeeks[wi].days[di].type = typeInp.value; });
+  // auto-resize to content
+  const resizeType = () => { typeInp.style.height = 'auto'; typeInp.style.height = typeInp.scrollHeight + 'px'; };
+  typeInp.addEventListener('input', () => { editorWeeks[wi].days[di].type = typeInp.value; resizeType(); });
+  typeInp.addEventListener('focus', () => typeInp.style.textTransform = 'none');
+  typeInp.addEventListener('blur',  () => typeInp.style.textTransform = '');
+  setTimeout(resizeType, 0);
+  el.appendChild(typeInp);
 
+  // Dist row
+  const distRow = document.createElement('div'); distRow.className = 'editor-dist-row-tile';
   const distInp = document.createElement('input');
   distInp.type = 'text'; distInp.className = 'editor-dist-inp';
-  distInp.value = editorUnit === 'km' ? day.distKm : day.dist;
+  distInp.value = editorUnit === 'km' ? (day.distKm||'0') : (day.dist||'0');
   distInp.addEventListener('input', () => {
     const n = parseFloat(distInp.value);
     if (editorUnit === 'km') {
@@ -1396,18 +1462,18 @@ function buildEditorDayEl(day, wi, di) {
     }
     updateEditorWeekMileage(wi);
   });
-
   const distLbl = document.createElement('span'); distLbl.className = 'editor-dist-lbl'; distLbl.textContent = editorUnit;
+  distRow.append(distInp, distLbl);
+  el.appendChild(distRow);
 
-  const noteInp = document.createElement('input');
-  noteInp.type = 'text'; noteInp.className = 'editor-note-inp';
-  noteInp.value = day.note; noteInp.placeholder = 'Note…';
-  noteInp.addEventListener('input', () => { editorWeeks[wi].days[di].note = noteInp.value; });
-
-  const delBtn = document.createElement('button'); delBtn.className = 'editor-del-day-btn'; delBtn.textContent = '×';
-  delBtn.addEventListener('click', () => { editorWeeks[wi].days.splice(di, 1); renderEditorWeeks(); });
-
-  el.append(handle, pos, typeInp, distInp, distLbl, noteInp, delBtn);
+  // Note (small, at bottom)
+  const noteInp = document.createElement('textarea');
+  noteInp.className = 'editor-note-inp'; noteInp.rows = 1;
+  noteInp.placeholder = 'note…'; noteInp.value = day.note||'';
+  const resizeNote = () => { noteInp.style.height = 'auto'; noteInp.style.height = Math.min(noteInp.scrollHeight, 40) + 'px'; };
+  noteInp.addEventListener('input', () => { editorWeeks[wi].days[di].note = noteInp.value; resizeNote(); });
+  setTimeout(resizeNote, 0);
+  el.appendChild(noteInp);
 
   // Day drag
   el.addEventListener('dragstart', e => {

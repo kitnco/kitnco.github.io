@@ -25,7 +25,7 @@
   --c-lt:#FDFACC;
   --c-mp:#D8F0E3;
   --c-vo2:#EAD8F5;
-  --c-race:#F5D8D8;
+  --c-race:#FDE8F0;
 }
 body.dark{
   --bg:#15171A;
@@ -45,7 +45,7 @@ body.dark{
   --c-lt:#2E2A00;
   --c-mp:#0C1F14;
   --c-vo2:#2A1A3A;
-  --c-race:#3A1515;
+  --c-race:#3A1525;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;min-height:100vh;transition:background .2s,color .2s;}
@@ -196,7 +196,7 @@ body.colorcode .bucket-mp .tile-type{color:var(--accent);}
 body.colorcode .bucket-vo2{background:var(--c-vo2);}
 body.colorcode .bucket-rest{background:var(--c-rest);opacity:.85;}
 body.colorcode .bucket-recovery{background:var(--c-recovery);}
-body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#c0392b);border-width:2px;}
+body.colorcode .bucket-race{background:var(--c-race);border-color:#d4689a;border-width:2px;}
 
 /* Tile text */
 .tile-type{
@@ -656,7 +656,16 @@ function extractTypeLabel(title) {
     .replace(/\s*\(total\s*\)/i, '')    // strip "(total)"
     .replace(/\s*\(\s*\)\s*$/, '')      // strip empty parens
     .replace(/\s+/g, ' ').trim();
-  const MAP = {'Rest or cross-train':'Rest/Cross-Train','Rest or Cross-Train':'Rest/Cross-Train'};
+  const MAP = {
+    'Rest or cross-train':'Rest/Cross-Train',
+    'Rest or Cross-Train':'Rest/Cross-Train',
+  };
+  // Normalize tune-up race variants → "Tune-up race"
+  if (/tune.?up race/i.test(s)) return 'Tune-up race';
+  // Normalize gen-aerobic + speed → Gen-aerobic
+  if (/^gen-aerobic\s*\+\s*speed/i.test(s) || /^gen-aerobic\s*\+\s*speed/i.test(s)) return 'Gen-aerobic';
+  // Normalize VO2max variants
+  if (/^v[̇]?[oO][₂2]max$/i.test(s) || /^VO₂max$/i.test(s)) return 'VO₂max';
   return MAP[s] || s || 'Run';
 }
 
@@ -677,18 +686,21 @@ function cleanNote(title, units) {
 
 function getTypeBucket(label) {
   const l = label.toLowerCase();
-  if (l.startsWith('rest') && !l.includes('recovery')) return 'rest';
+  if (l === '' || (l.startsWith('rest') && !l.includes('recovery'))) return 'rest';
   if (l.startsWith('rest/x')) return 'xtrain';
-  if (l.startsWith('recovery')) return 'recovery';
+  if (l.startsWith('recovery') || l.startsWith('dress rehearsal')) return 'recovery';
   if (l.includes('cross') || l.includes('strength')) return 'cross';
-  if (l.includes('race') || l.includes('goal marathon') || l.includes('tune-up')) return 'race';
+  if (l.includes('tune-up') || l.includes('goal marathon')) return 'race';
+  if (l.includes('race') && !l.includes('race pace') && !l.includes('marathon-pace') && !l.includes('marathon pace')) return 'race';
   if (l.startsWith('long run') || l.includes('progression long')) return 'long';
   if (l.startsWith('med-long') || l.startsWith('medium-long')) return 'medlong';
-  if (l.includes('marathon-pace') || l.includes('marathon pace') || l === 'mp') return 'mp';
-  if (l.startsWith('dress rehearsal')) return 'mp';
-  if ((l.includes('vo') && l.includes('max')) || l.startsWith('vo₂') || l.startsWith('v̇o')) return 'vo2';
+  if (l.includes('marathon-pace') || l.includes('marathon pace') || l === 'mp' || l.startsWith('race pace')) return 'mp';
+  // gen-aerobic (with or without + speed) → easy. Must come before speed check.
+  if (l.startsWith('gen-aerobic') || l.startsWith('general aerobic')) return 'easy';
+  // VO2max and intervals are the same intensity
+  if ((l.includes('vo') && l.includes('max')) || l.startsWith('vo₂') || l.startsWith('v̇o') || l.includes('interval') || l === 'speed' || l.startsWith('speed ')) return 'vo2';
   if (l === 'lt' || l.startsWith('lt ') || l.includes('lactate') || l.includes('tempo')) return 'lt';
-  if (l.includes('interval') || l.includes('speed')) return 'vo2';
+  if (l.includes('speed')) return 'vo2';   // catch "X + speed" combos not already handled
   return 'easy';
 }
 
@@ -702,7 +714,7 @@ const BUCKET_COLORS = {
   lt:       {dark:'#d4944a', light:'#c07828'},
   mp:       {dark:'#4a90c4', light:'#2470a8'},
   vo2:      {dark:'#9466d4', light:'#7040b4'},
-  race:     {dark:'#d44a4a', light:'#b82828'},
+  race:     {dark:'#d46896', light:'#b83a72'},
   cross:    {dark:'#7a8290', light:'#5a6270'},
 };
 
