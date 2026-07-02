@@ -25,7 +25,9 @@
   --c-lt:#FDFACC;
   --c-mp:#D8F0E3;
   --c-vo2:#EAD8F5;
-  --c-race:#FDE8F0;
+  --c-race:#F5D8D8;
+  --c-tuneup:#FDE8F0;
+  --c-medlong-border:#1a8a8a;
 }
 body.dark{
   --bg:#15171A;
@@ -45,7 +47,8 @@ body.dark{
   --c-lt:#2E2A00;
   --c-mp:#0C1F14;
   --c-vo2:#2A1A3A;
-  --c-race:#3A1525;
+  --c-race:#3A1515;
+  --c-tuneup:#3A1525;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;min-height:100vh;transition:background .2s,color .2s;}
@@ -188,15 +191,17 @@ td.week-col.current-week{
    Tempo/MP/VO2/Race: subtle tint. Rest vs Recovery: clearly different tints. */
 body.colorcode .bucket-long{border-color:var(--accent);border-width:2px;}
 body.colorcode .bucket-long .tile-type{color:var(--accent);}
-body.colorcode .bucket-medlong{border-color:var(--accent);border-width:1.5px;opacity:.85;}
-body.colorcode .bucket-medlong .tile-type{color:var(--accent);}
+body.colorcode .bucket-medlong{border-color:var(--c-medlong-border,#1a8a8a);border-width:2px;}
+body.colorcode .bucket-medlong .tile-type{color:var(--c-medlong-border,#1a8a8a);}
 body.colorcode .bucket-lt{background:var(--c-lt);}
 body.colorcode .bucket-mp{background:var(--c-mp);border-color:var(--accent);border-width:2px;}
 body.colorcode .bucket-mp .tile-type{color:var(--accent);}
 body.colorcode .bucket-vo2{background:var(--c-vo2);}
 body.colorcode .bucket-rest{background:var(--c-rest);opacity:.85;}
 body.colorcode .bucket-recovery{background:var(--c-recovery);}
-body.colorcode .bucket-race{background:var(--c-race);border-color:#d4689a;border-width:2px;}
+body.colorcode .bucket-race{background:var(--c-race);border-color:var(--danger,#c0392b);border-width:2px;}
+body.colorcode .bucket-tuneup{background:var(--c-tuneup);border-color:#d4689a;border-width:2px;}
+body.colorcode .bucket-tuneup .tile-type{color:#b83a72;}
 
 /* Tile text */
 .tile-type{
@@ -690,7 +695,8 @@ function getTypeBucket(label) {
   if (l.startsWith('rest/x')) return 'xtrain';
   if (l.startsWith('recovery') || l.startsWith('dress rehearsal')) return 'recovery';
   if (l.includes('cross') || l.includes('strength')) return 'cross';
-  if (l.includes('tune-up') || l.includes('goal marathon')) return 'race';
+  if (l.includes('tune-up') || l.includes('tune up')) return 'tuneup';
+  if (l.includes('goal marathon')) return 'race';
   if (l.includes('race') && !l.includes('race pace') && !l.includes('marathon-pace') && !l.includes('marathon pace')) return 'race';
   if (l.startsWith('long run') || l.includes('progression long')) return 'long';
   if (l.startsWith('med-long') || l.startsWith('medium-long')) return 'medlong';
@@ -709,12 +715,13 @@ const BUCKET_COLORS = {
   xtrain:   {dark:'#5a5e66', light:'#9a9ea6'},
   recovery: {dark:'#b8864a', light:'#b8864a'},
   easy:     {dark:'#4a9e6a', light:'#2e7a4e'},
-  medlong:  {dark:'#3a8e5a', light:'#1e6a3e'},
+  medlong:  {dark:'#2aaeae', light:'#1a8a8a'},
   long:     {dark:'#2a7e4a', light:'#0e5a2e'},
   lt:       {dark:'#d4944a', light:'#c07828'},
-  mp:       {dark:'#4a90c4', light:'#2470a8'},
+  mp:       {dark:'#2a9e5a', light:'#1a7a3e'},
   vo2:      {dark:'#9466d4', light:'#7040b4'},
-  race:     {dark:'#d46896', light:'#b83a72'},
+  race:     {dark:'#d44a4a', light:'#b82828'},
+  tuneup:   {dark:'#d46896', light:'#b83a72'},
   cross:    {dark:'#7a8290', light:'#5a6270'},
 };
 
