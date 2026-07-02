@@ -446,9 +446,9 @@ const State = (() => {
     // Call once on page load. Loads localStorage immediately,
     // then fetches Gist in background and updates.
     async init() {
-      _pat    = localStorage.getItem(LS.pat);
-      _gistId = localStorage.getItem(LS.gist);
-      _data   = merge(DEFAULTS, lsGet(LS.data));
+      try { _pat    = localStorage.getItem(LS.pat); } catch { _pat = null; }
+      try { _gistId = localStorage.getItem(LS.gist); } catch { _gistId = null; }
+      _data = merge(DEFAULTS, lsGet(LS.data));
       lsSave();
       if (!_pat) { emit('offline'); return; }
       try {
@@ -911,7 +911,7 @@ function loadPlan(key) {
 
 async function setup() {
   // ── Init state (localStorage immediately, Gist in background) ──────────
-  await State.init();
+  try { await State.init(); } catch(e) { console.warn('State.init failed:', e); }
 
   // ── Restore preferences ─────────────────────────────────────────────────
   const prefs = State.get('prefs');
