@@ -231,6 +231,14 @@ body.colorcode .bucket-tuneup .tile-type{color:#b83a72;}
 .tile-note:focus{outline:none;color:var(--ink);}
 .tile-note::placeholder{color:var(--sub);opacity:.5;}
 
+/* View toggle — shown only on mobile via media query below */
+.lv-view-field{display:none;align-items:center;gap:8px;margin-left:auto;}
+.lv-view-label{font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;}
+.lv-toggle-pill{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px;}
+.lv-toggle-pill button{font-family:inherit;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;border:none;background:none;color:var(--sub);cursor:pointer;}
+.lv-toggle-pill button.on{background:var(--accent);color:#fff;}
+body.dark .lv-toggle-pill button.on{color:#0B1410;}
+
 /* responsive */
 @media(max-width:700px){
   .topbar-r1{padding:10px 14px;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
@@ -279,13 +287,6 @@ body.colorcode .bucket-tuneup .tile-type{color:#b83a72;}
 .lv-total-val{font-size:14px;font-weight:800;color:var(--accent);}
 .lv-week-badge{font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--sub);text-transform:uppercase;text-align:center;}
 .lv-week-num{font-size:18px;font-weight:800;color:var(--ink);text-align:center;line-height:1.1;}
-/* View toggle — hidden on desktop */
-.lv-view-field{display:none;align-items:center;gap:8px;margin-left:auto;}
-.lv-view-label{font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;}
-.lv-toggle-pill{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px;}
-.lv-toggle-pill button{font-family:inherit;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;border:none;background:none;color:var(--sub);cursor:pointer;}
-.lv-toggle-pill button.on{background:var(--accent);color:#fff;}
-body.dark .lv-toggle-pill button.on{color:#0B1410;}
 @media(min-width:701px){
   .expand-btn{display:none;}
   .topbar-r2{display:flex!important;}
