@@ -1622,7 +1622,7 @@ function setListMode(mode) {
   document.getElementById('viewTiles').classList.toggle('on', !mode);
   document.getElementById('viewList').classList.toggle('on', mode);
   document.querySelector('.main').style.display = mode ? 'none' : '';
-  document.getElementById('listView').style.display = mode ? '' : 'none';
+  document.getElementById('listView').style.display = mode ? 'block' : 'none';
   if (mode) { initListWeek(); renderListView(); }
 }
 
@@ -1630,7 +1630,7 @@ function renderListView() {
   if (!planData) return;
   const lv = document.getElementById('listView');
   if (!lv) return;
-  const wsd = weekStartDay;
+  const wsd = startDow;
   const week = planData.weeks[listWeekIdx];
   if (!week) return;
   const planStart = firstWeekStart();
@@ -1645,7 +1645,7 @@ function renderListView() {
     const isRest  = ['rest','xtrain','cross'].includes(day.bucket);
     const dayName = LV_DAY_NAMES[(wsd + di) % 7];
     const dayNum  = date.getDate();
-    const dist    = parseFloat(unit === 'km' ? (day.distKm || day.dist) : day.dist) || 0;
+    const dist    = parseFloat(unit === 'km' ? convertDist(day.dist, true) : day.dist) || 0;
     const distStr = dist.toFixed(1);
     const note    = (unit === 'km' ? (day.noteKm || day.note) : day.note) || '';
     const showNote = note && note !== day.type;
@@ -1668,7 +1668,7 @@ function renderListCal(weekTotal, dailyTotal) {
   const y = listCalMonth.getFullYear(), m = listCalMonth.getMonth();
   const today = new Date(); today.setHours(0,0,0,0);
   const planStart = firstWeekStart();
-  const wsd = weekStartDay;
+  const wsd = startDow;
   const runDays = new Set();
   planData.weeks.forEach((wk,wi) => wk.days.forEach((day,di) => {
     if (['rest','xtrain','cross'].includes(day.bucket)) return;
