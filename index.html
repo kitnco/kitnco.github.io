@@ -240,7 +240,52 @@ body.colorcode .bucket-tuneup .tile-type{color:#b83a72;}
   .topbar-r2{display:none;padding:10px 14px;}
   .topbar-r2.open{display:flex;}
   .expand-btn{display:flex;}
+  .lv-view-field{display:flex;}
 }
+
+/* ── LIST VIEW ── */
+#listView{display:none;}
+.lv-day-row{display:flex;align-items:stretch;padding-left:16px;min-height:56px;cursor:pointer;border-bottom:1px solid var(--line);}
+.lv-day-row:last-child{border-bottom:none;}
+.lv-day-row.lv-today{background:color-mix(in srgb, var(--accent) 6%, transparent);}
+.lv-date{width:42px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:10px 0;}
+.lv-day-name{font-size:9px;font-weight:700;letter-spacing:.07em;color:var(--sub);text-transform:uppercase;}
+.lv-day-num{font-size:19px;font-weight:700;color:var(--ink);line-height:1.1;}
+.lv-day-row.lv-today .lv-day-num{color:var(--accent);}
+.lv-bucket-bar{width:3px;border-radius:2px;margin:10px 12px 10px 8px;flex-shrink:0;align-self:stretch;}
+.lv-content{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:10px 0;}
+.lv-type{font-size:13px;font-weight:700;color:var(--ink);}
+.lv-note{font-size:11.5px;color:var(--sub);}
+.lv-day-row.lv-rest .lv-type,.lv-day-row.lv-rest .lv-dist-num{color:var(--sub);}
+.lv-dist{padding:10px 16px 10px 8px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:1px;flex-shrink:0;}
+.lv-dist-num{font-size:14px;font-weight:700;color:var(--ink);}
+.lv-dist-unit{font-size:10px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.04em;}
+.lv-cal{border-top:1px solid var(--line);}
+.lv-cal-hdr{display:flex;justify-content:space-between;align-items:center;padding:7px 14px 4px;}
+.lv-cal-month{font-size:14px;font-weight:800;color:var(--ink);}
+.lv-cal-overview{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--sub);text-transform:uppercase;}
+.lv-cal-dow{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px 5px;gap:1px;margin-bottom:4px;border-bottom:1px solid var(--line);}
+.lv-cal-dow span{font-size:11px;font-weight:700;color:var(--sub);text-align:center;text-transform:uppercase;}
+.lv-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px 2px;gap:1px;align-content:start;}
+.lv-cal-cell{display:flex;flex-direction:column;align-items:center;padding:3px 0 4px;gap:2px;}
+.lv-cal-cell.prev-month{opacity:.3;}
+.lv-cal-num{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--sub);}
+.lv-cal-cell.is-today .lv-cal-num{background:var(--accent);color:#fff;font-weight:700;}
+.lv-cal-dot{width:4px;height:4px;border-radius:50%;background:transparent;}
+.lv-cal-cell.has-run .lv-cal-dot{background:var(--accent);}
+.lv-cal-cell.is-today.has-run .lv-cal-dot{background:var(--accent);}
+.lv-totals{display:flex;justify-content:space-between;align-items:center;padding:6px 14px 12px;border-top:1px solid var(--line);margin-top:3px;}
+.lv-total-lbl{font-size:9.5px;font-weight:700;letter-spacing:.07em;color:var(--sub);text-transform:uppercase;margin-bottom:1px;}
+.lv-total-val{font-size:14px;font-weight:800;color:var(--accent);}
+.lv-week-badge{font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--sub);text-transform:uppercase;text-align:center;}
+.lv-week-num{font-size:18px;font-weight:800;color:var(--ink);text-align:center;line-height:1.1;}
+/* View toggle — hidden on desktop */
+.lv-view-field{display:none;align-items:center;gap:8px;margin-left:auto;}
+.lv-view-label{font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;}
+.lv-toggle-pill{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px;}
+.lv-toggle-pill button{font-family:inherit;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;border:none;background:none;color:var(--sub);cursor:pointer;}
+.lv-toggle-pill button.on{background:var(--accent);color:#fff;}
+body.dark .lv-toggle-pill button.on{color:#0B1410;}
 @media(min-width:701px){
   .expand-btn{display:none;}
   .topbar-r2{display:flex!important;}
@@ -429,6 +474,13 @@ body.dark .btn-use{color:#0B1410;}
       <div class="switch" id="colorToggle"><div class="knob"></div></div>
       <div class="legend" id="legend"></div>
     </div>
+    <div class="lv-view-field" id="viewToggleField">
+      <span class="lv-view-label">View</span>
+      <div class="lv-toggle-pill">
+        <button id="viewTiles" class="on">Tiles</button>
+        <button id="viewList">List</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -440,6 +492,8 @@ body.dark .btn-use{color:#0B1410;}
     </table>
   </div>
 </div>
+
+<div id="listView"></div>
 
 <!-- Modal must live before <script> so getElementById finds it when setup() runs -->
 <div class="modal-bg" id="syncModalBg">
@@ -1536,6 +1590,142 @@ document.getElementById('calSyncNowBtn').addEventListener('click', () => {
 // Re-populate calendar URL whenever sync status returns to synced
 // (covers the case where owner is captured for the first time mid-session)
 State.onStatus(s => { if (s === 'synced') updateCalendarUI(); });
+
+// ─────────────────────────────────────────────────────────────
+// MOBILE LIST VIEW
+// ─────────────────────────────────────────────────────────────
+let listMode = false;
+let listWeekIdx = 0;
+let listCalMonth = null;
+
+const LV_DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const LV_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const LV_BUCKET_COLORS = {
+  rest:'var(--line)',xtrain:'var(--line)',cross:'var(--line)',
+  recovery:'#4a6080',easy:'#2e7a4e',medlong:'#1a8a8a',
+  long:'#0e5a2e',lt:'#9a8600',mp:'#1a7a3e',
+  vo2:'#7040b4',race:'#b82828',tuneup:'#b83a72'
+};
+
+function initListWeek() {
+  if (!planData) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = firstWeekStart();
+  const elapsed = Math.floor((today - start) / 86400000);
+  listWeekIdx = Math.max(0, Math.min(Math.floor(elapsed / 7), planData.weeks.length - 1));
+  if (!listCalMonth) listCalMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+}
+
+function setListMode(mode) {
+  listMode = mode;
+  document.getElementById('viewTiles').classList.toggle('on', !mode);
+  document.getElementById('viewList').classList.toggle('on', mode);
+  document.querySelector('.main').style.display = mode ? 'none' : '';
+  document.getElementById('listView').style.display = mode ? '' : 'none';
+  if (mode) { initListWeek(); renderListView(); }
+}
+
+function renderListView() {
+  if (!planData) return;
+  const lv = document.getElementById('listView');
+  if (!lv) return;
+  const wsd = weekStartDay;
+  const week = planData.weeks[listWeekIdx];
+  if (!week) return;
+  const planStart = firstWeekStart();
+  const weekStart = new Date(planStart);
+  weekStart.setDate(planStart.getDate() + listWeekIdx * 7);
+  const today = new Date(); today.setHours(0,0,0,0);
+  let daysHTML = '', weekTotal = 0, dailyTotal = null;
+  week.days.forEach((day, di) => {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + di);
+    const isToday = date.getTime() === today.getTime();
+    const isRest  = ['rest','xtrain','cross'].includes(day.bucket);
+    const dayName = LV_DAY_NAMES[(wsd + di) % 7];
+    const dayNum  = date.getDate();
+    const dist    = parseFloat(unit === 'km' ? (day.distKm || day.dist) : day.dist) || 0;
+    const distStr = dist.toFixed(1);
+    const note    = (unit === 'km' ? (day.noteKm || day.note) : day.note) || '';
+    const showNote = note && note !== day.type;
+    weekTotal += dist;
+    if (isToday) dailyTotal = distStr;
+    const bar = LV_BUCKET_COLORS[day.bucket] || 'var(--line)';
+    daysHTML += `<div class="lv-day-row${isToday?' lv-today':''}${isRest?' lv-rest':''}">
+      <div class="lv-date"><span class="lv-day-name">${dayName}</span><span class="lv-day-num">${dayNum}</span></div>
+      <div class="lv-bucket-bar" style="background:${bar}"></div>
+      <div class="lv-content"><span class="lv-type">${day.type||'Rest'}</span>${showNote?`<span class="lv-note">${note}</span>`:''}</div>
+      <div class="lv-dist"><span class="lv-dist-num">${isRest?'—':distStr}</span>${!isRest?`<span class="lv-dist-unit">${unit}</span>`:''}</div>
+    </div>`;
+  });
+  lv.innerHTML = `<div class="lv-days">${daysHTML}</div>${renderListCal(weekTotal, dailyTotal)}`;
+  setupLvSwipe();
+}
+
+function renderListCal(weekTotal, dailyTotal) {
+  if (!listCalMonth) return '';
+  const y = listCalMonth.getFullYear(), m = listCalMonth.getMonth();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const planStart = firstWeekStart();
+  const wsd = weekStartDay;
+  const runDays = new Set();
+  planData.weeks.forEach((wk,wi) => wk.days.forEach((day,di) => {
+    if (['rest','xtrain','cross'].includes(day.bucket)) return;
+    if (!day.dist || day.dist==='0') return;
+    const d = new Date(planStart); d.setDate(planStart.getDate()+wi*7+di);
+    if (d.getFullYear()===y && d.getMonth()===m) runDays.add(d.getDate());
+  }));
+  const firstDow = new Date(y,m,1).getDay();
+  const offset   = (firstDow - wsd + 7) % 7;
+  const daysInMonth   = new Date(y,m+1,0).getDate();
+  const daysInPrevMon = new Date(y,m,0).getDate();
+  const DOW = wsd===1 ? ['M','T','W','T','F','S','S'] : ['S','M','T','W','T','F','S'];
+  let cells = '';
+  for (let i=offset-1;i>=0;i--) cells+=`<div class="lv-cal-cell prev-month"><span class="lv-cal-num">${daysInPrevMon-i}</span><span class="lv-cal-dot"></span></div>`;
+  for (let d=1;d<=daysInMonth;d++) {
+    const dt=new Date(y,m,d), isTod=dt.getTime()===today.getTime(), hasR=runDays.has(d);
+    cells+=`<div class="lv-cal-cell${isTod?' is-today':''}${hasR?' has-run':''}"><span class="lv-cal-num">${d}</span><span class="lv-cal-dot"></span></div>`;
+  }
+  const rows=Math.ceil((offset+daysInMonth)/7);
+  for (let d=1;d<=rows*7-(offset+daysInMonth);d++) cells+=`<div class="lv-cal-cell prev-month"><span class="lv-cal-num">${d}</span><span class="lv-cal-dot"></span></div>`;
+  const wt=(weekTotal||0).toFixed(1), dt2=dailyTotal!==null?dailyTotal+' '+unit:'—';
+  return `<div class="lv-cal">
+    <div class="lv-cal-hdr"><span class="lv-cal-month">${LV_MONTH_NAMES[m]} ${y}</span><span class="lv-cal-overview">Monthly overview</span></div>
+    <div class="lv-cal-dow">${DOW.map(l=>`<span>${l}</span>`).join('')}</div>
+    <div class="lv-cal-grid">${cells}</div>
+    <div class="lv-totals">
+      <div><div class="lv-total-lbl">Weekly total</div><div class="lv-total-val">${wt} ${unit}</div></div>
+      <div style="text-align:center"><div class="lv-week-badge">Week</div><div class="lv-week-num">${listWeekIdx+1}</div></div>
+      <div style="text-align:right"><div class="lv-total-lbl">Daily total</div><div class="lv-total-val">${dt2}</div></div>
+    </div></div>`;
+}
+
+let _lvTX=0,_lvTY=0,_calTY=0;
+function setupLvSwipe() {
+  const lv=document.getElementById('listView'); if(!lv) return;
+  const days=lv.querySelector('.lv-days'), cal=lv.querySelector('.lv-cal');
+  if (days) {
+    days.addEventListener('touchstart',e=>{_lvTX=e.touches[0].clientX;_lvTY=e.touches[0].clientY;},{passive:true});
+    days.addEventListener('touchend',e=>{
+      const dx=e.changedTouches[0].clientX-_lvTX,dy=e.changedTouches[0].clientY-_lvTY;
+      if(Math.abs(dx)<40||Math.abs(dy)>Math.abs(dx)) return;
+      if(dx<0&&listWeekIdx<planData.weeks.length-1){listWeekIdx++;renderListView();}
+      else if(dx>0&&listWeekIdx>0){listWeekIdx--;renderListView();}
+    },{passive:true});
+  }
+  if (cal) {
+    cal.addEventListener('touchstart',e=>{_calTY=e.touches[0].clientY;},{passive:true});
+    cal.addEventListener('touchend',e=>{
+      const dy=e.changedTouches[0].clientY-_calTY; if(Math.abs(dy)<40) return;
+      const d=listCalMonth;
+      listCalMonth=dy<0?new Date(d.getFullYear(),d.getMonth()+1,1):new Date(d.getFullYear(),d.getMonth()-1,1);
+      renderListView();
+    },{passive:true});
+  }
+}
+
+document.getElementById('viewTiles').addEventListener('click', ()=>setListMode(false));
+document.getElementById('viewList').addEventListener('click',  ()=>setListMode(true));
 </script>
 </body>
 </html>
