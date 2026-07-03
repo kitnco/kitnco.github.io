@@ -475,6 +475,7 @@ body.dark .btn-use{color:#0B1410;}
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="8" height="8" rx="1.2"/><path d="M2 9H1.5A.5.5 0 0 1 1 8.5v-7A.5.5 0 0 1 1.5 1h7a.5.5 0 0 1 .5.5V2"/></svg>
             Copy
           </button>
+          <button class="btn btn-ghost cal-copy-btn" id="calSyncNowBtn" title="Force push ICS to Gist now">Sync now</button>
         </div>
         <a class="btn btn-use cal-subscribe-btn" id="calSubscribeBtn" href="#" style="display:none">
           Add to Calendar
@@ -668,6 +669,9 @@ const State = (() => {
       if (!_gistId || !_ownerLogin) return null;
       return `https://gist.githubusercontent.com/${_ownerLogin}/${_gistId}/raw/${ICS_FILE}`;
     },
+
+    // Force a Gist push without changing any data — used to write ICS on first load
+    touch() { if (_pat && _gistId) schedulePush(); },
 
     hasPAT()  { return !!_pat; },
     status()  { return _status; },
@@ -1481,6 +1485,8 @@ async function setup() {
   // ── Load active race and render ───────────────────────────────────────────
   loadRaceIntoUI();
   updateCalendarUI();
+  // Ensure ICS file is written to Gist on first load after deploy
+  if (State.hasPAT()) State.touch();
 }
 
 // Populate the webcal:// subscription URL in the sync modal
@@ -1516,6 +1522,14 @@ document.getElementById('calCopyBtn').addEventListener('click', () => {
     btn.textContent = 'Copied!';
     setTimeout(() => { btn.innerHTML = orig; }, 1800);
   });
+});
+
+document.getElementById('calSyncNowBtn').addEventListener('click', () => {
+  const btn = document.getElementById('calSyncNowBtn');
+  btn.textContent = 'Syncing…';
+  btn.disabled = true;
+  State.touch();
+  setTimeout(() => { btn.textContent = 'Sync now'; btn.disabled = false; }, 2500);
 });
 
 // Re-populate calendar URL whenever sync status returns to synced
