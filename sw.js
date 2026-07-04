@@ -1,11 +1,19 @@
-const CACHE = 'runkit-v2';
+const CACHE = 'runkit-v3';
 const ASSETS = [
   './', './index.html', './library.html',
   './manifest.json', './icon-192.png', './icon-512.png'
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE).then(c =>
+      Promise.all(ASSETS.map(url =>
+        fetch(new Request(url, { cache: 'reload' }))
+          .then(r => c.put(url, r))
+          .catch(() => {})
+      ))
+    )
+  );
   self.skipWaiting();
 });
 

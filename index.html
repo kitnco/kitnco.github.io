@@ -274,7 +274,13 @@ body.dark .lv-toggle-pill button.on{color:#0B1410;}
 .lv-dist{padding:10px 16px 10px 8px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:1px;flex-shrink:0;}
 .lv-dist-num{font-size:14px;font-weight:700;color:var(--ink);}
 .lv-dist-unit{font-size:10px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.04em;}
-.lv-cal{border-top:1px solid var(--line);}
+.lv-cal{border-top:1px solid var(--line);touch-action:pan-x;}
+.lv-days{touch-action:pan-y;}
+.lv-swap{transition:opacity .18s ease, transform .18s ease;}
+.lv-swap.out-left{opacity:0;transform:translateX(-24px);}
+.lv-swap.out-right{opacity:0;transform:translateX(24px);}
+.lv-swap.out-up{opacity:0;transform:translateY(-16px);}
+.lv-swap.out-down{opacity:0;transform:translateY(16px);}
 .lv-cal-hdr{display:flex;justify-content:space-between;align-items:center;padding:7px 14px 4px;}
 .lv-cal-month{font-size:14px;font-weight:800;color:var(--ink);}
 .lv-cal-overview{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--sub);text-transform:uppercase;}
@@ -1667,7 +1673,7 @@ function renderListView() {
       <div class="lv-dist"><span class="lv-dist-num">${isRest?'—':distStr}</span>${!isRest?`<span class="lv-dist-unit">${unit}</span>`:''}</div>
     </div>`;
   });
-  lv.innerHTML = `<div class="lv-days">${daysHTML}</div>${renderListCal(weekTotal, dailyTotal)}`;
+  lv.innerHTML = `<div class="lv-days lv-swap">${daysHTML}</div>${renderListCal(weekTotal, dailyTotal)}`;
   setupLvSwipe();
 }
 
@@ -1698,7 +1704,7 @@ function renderListCal(weekTotal, dailyTotal) {
   const rows=Math.ceil((offset+daysInMonth)/7);
   for (let d=1;d<=rows*7-(offset+daysInMonth);d++) cells+=`<div class="lv-cal-cell prev-month"><span class="lv-cal-num">${d}</span><span class="lv-cal-dot"></span></div>`;
   const wt=(weekTotal||0).toFixed(1), dt2=dailyTotal!==null?dailyTotal+' '+unit:'—';
-  return `<div class="lv-cal">
+  return `<div class="lv-cal lv-swap">
     <div class="lv-cal-hdr"><span class="lv-cal-month">${LV_MONTH_NAMES[m]} ${y}</span><span class="lv-cal-overview">Monthly overview</span></div>
     <div class="lv-cal-dow">${DOW.map(l=>`<span>${l}</span>`).join('')}</div>
     <div class="lv-cal-grid">${cells}</div>
@@ -1709,26 +1715,56 @@ function renderListCal(weekTotal, dailyTotal) {
     </div></div>`;
 }
 
-let _lvTX=0,_lvTY=0,_calTY=0;
+let _lvTX=0,_lvTY=0,_lvMoved=false,_calTX=0,_calTY=0,_calMoved=false;
+
+// Fade+slide the list view content on change. `axis`='x' animates day-list
+// (week change), 'y' animates calendar (month change). dir sets direction.
+function animateListSwap(axis, dir, mutate) {
+  const el = document.querySelector(axis==='x' ? '.lv-days' : '.lv-cal');
+  if (!el) { mutate(); return; }
+  const outCls = axis==='x' ? (dir<0?'out-left':'out-right') : (dir<0?'out-up':'out-down');
+  const inCls  = axis==='x' ? (dir<0?'out-right':'out-left') : (dir<0?'out-down':'out-up');
+  el.classList.add(outCls);
+  setTimeout(()=>{
+    mutate();                       // rebuilds #listView innerHTML
+    const fresh = document.querySelector(axis==='x' ? '.lv-days' : '.lv-cal');
+    if (!fresh) return;
+    fresh.classList.add(inCls);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>fresh.classList.remove(inCls)));
+  },180);
+}
+
 function setupLvSwipe() {
   const lv=document.getElementById('listView'); if(!lv) return;
   const days=lv.querySelector('.lv-days'), cal=lv.querySelector('.lv-cal');
   if (days) {
-    days.addEventListener('touchstart',e=>{_lvTX=e.touches[0].clientX;_lvTY=e.touches[0].clientY;},{passive:true});
+    days.addEventListener('touchstart',e=>{_lvTX=e.touches[0].clientX;_lvTY=e.touches[0].clientY;_lvMoved=false;},{passive:true});
+    days.addEventListener('touchmove',e=>{
+      const dx=e.touches[0].clientX-_lvTX,dy=e.touches[0].clientY-_lvTY;
+      if(Math.abs(dx)>Math.abs(dy)){ e.preventDefault(); _lvMoved=true; }
+    },{passive:false});
     days.addEventListener('touchend',e=>{
       const dx=e.changedTouches[0].clientX-_lvTX,dy=e.changedTouches[0].clientY-_lvTY;
-      if(Math.abs(dx)<40||Math.abs(dy)>Math.abs(dx)) return;
-      if(dx<0&&listWeekIdx<planData.weeks.length-1){listWeekIdx++;renderListView();}
-      else if(dx>0&&listWeekIdx>0){listWeekIdx--;renderListView();}
+      if(Math.abs(dx)<40||Math.abs(dy)>Math.abs(dx))return;
+      if(dx<0&&listWeekIdx<planData.weeks.length-1) animateListSwap('x',1,()=>{listWeekIdx++;renderListView();});
+      else if(dx>0&&listWeekIdx>0) animateListSwap('x',-1,()=>{listWeekIdx--;renderListView();});
     },{passive:true});
   }
   if (cal) {
-    cal.addEventListener('touchstart',e=>{_calTY=e.touches[0].clientY;},{passive:true});
+    cal.addEventListener('touchstart',e=>{_calTX=e.touches[0].clientX;_calTY=e.touches[0].clientY;_calMoved=false;},{passive:true});
+    cal.addEventListener('touchmove',e=>{
+      const dx=e.touches[0].clientX-_calTX,dy=e.touches[0].clientY-_calTY;
+      if(Math.abs(dy)>Math.abs(dx)){ e.preventDefault(); _calMoved=true; }
+    },{passive:false});
     cal.addEventListener('touchend',e=>{
-      const dy=e.changedTouches[0].clientY-_calTY; if(Math.abs(dy)<40) return;
+      const dx=e.changedTouches[0].clientX-_calTX,dy=e.changedTouches[0].clientY-_calTY;
+      if(Math.abs(dy)<40||Math.abs(dx)>Math.abs(dy))return;
       const d=listCalMonth;
-      listCalMonth=dy<0?new Date(d.getFullYear(),d.getMonth()+1,1):new Date(d.getFullYear(),d.getMonth()-1,1);
-      renderListView();
+      const dir=dy<0?1:-1;
+      animateListSwap('y',dir,()=>{
+        listCalMonth=dir>0?new Date(d.getFullYear(),d.getMonth()+1,1):new Date(d.getFullYear(),d.getMonth()-1,1);
+        renderListView();
+      });
     },{passive:true});
   }
 }
