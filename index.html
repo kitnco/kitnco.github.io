@@ -1549,6 +1549,8 @@ async function setup() {
   updateCalendarUI();
   // Ensure ICS file is written to Gist on first load after deploy
   if (State.hasPAT()) State.touch();
+  // On phones, default to the list view (tile grid is cramped on narrow screens)
+  if (window.innerWidth <= 700) setListMode(true);
 }
 
 // Populate the webcal:// subscription URL in the sync modal
