@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 <title>RunKit — Plan Library</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1F8F5E">
@@ -279,6 +279,12 @@ body.dark .chart-svg .value-label.inside{fill:#0B1410;}
 @media(max-width:800px){
   .plan-row{grid-template-columns:1fr 70px;}
   .plan-stat{display:none;}
+  .topbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:12px 16px;gap:10px;}
+  .topbar::-webkit-scrollbar{display:none;}
+  .lib-title{font-size:15px;flex-shrink:0;}
+  .pagenav{flex-shrink:0;}
+  .pagenav a{white-space:nowrap;}
+  .icon-btn,.mode-btn{flex-shrink:0;}
 }
 
 /* ── PLAN EDITOR ── */
