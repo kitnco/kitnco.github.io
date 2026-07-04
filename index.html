@@ -259,7 +259,9 @@ body.dark .lv-toggle-pill button.on{color:#0B1410;}
 
 /* ── LIST VIEW ── */
 #listView{display:none;}
-.lv-day-row{display:flex;align-items:stretch;padding-left:16px;min-height:56px;cursor:pointer;border-bottom:1px solid var(--line);}
+.lv-day-row{display:flex;align-items:stretch;padding-left:16px;min-height:56px;cursor:pointer;border-bottom:1px solid var(--line);position:relative;background:var(--panel);transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;}
+.lv-day-row.lv-lifted{transform:scale(1.03);box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:5;opacity:.96;}
+.lv-day-row.lv-drop-target{background:var(--accent-soft);}
 .lv-day-row:last-child{border-bottom:none;}
 .lv-day-row.lv-today{background:color-mix(in srgb, var(--accent) 6%, transparent);}
 .lv-date{width:42px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:10px 0;}
@@ -286,14 +288,15 @@ body.dark .lv-toggle-pill button.on{color:#0B1410;}
 .lv-cal-overview{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--sub);text-transform:uppercase;}
 .lv-cal-dow{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px 5px;gap:1px;margin-bottom:4px;border-bottom:1px solid var(--line);}
 .lv-cal-dow span{font-size:11px;font-weight:700;color:var(--sub);text-align:center;text-transform:uppercase;}
-.lv-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px 2px;gap:1px;align-content:start;}
-.lv-cal-cell{display:flex;flex-direction:column;align-items:center;padding:3px 0 4px;gap:2px;}
+.lv-cal-grid{padding:0 8px 2px;}
+.lv-cal-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;border-radius:10px;}
+.lv-cal-row.in-week{background:color-mix(in srgb, var(--accent) 12%, transparent);}
+.lv-cal-cell{display:flex;flex-direction:column;align-items:center;padding:3px 0 4px;gap:2px;cursor:pointer;}
 .lv-cal-cell.prev-month{opacity:.3;}
 .lv-cal-num{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--sub);}
 .lv-cal-cell.is-today .lv-cal-num{background:var(--accent);color:#fff;font-weight:700;}
 .lv-cal-dot{width:4px;height:4px;border-radius:50%;background:transparent;}
 .lv-cal-cell.has-run .lv-cal-dot{background:var(--accent);}
-.lv-cal-cell.is-today.has-run .lv-cal-dot{background:var(--accent);}
 .lv-totals{display:flex;justify-content:space-between;align-items:center;padding:6px 14px 12px;border-top:1px solid var(--line);margin-top:3px;}
 .lv-total-lbl{font-size:9.5px;font-weight:700;letter-spacing:.07em;color:var(--sub);text-transform:uppercase;margin-bottom:1px;}
 .lv-total-val{font-size:14px;font-weight:800;color:var(--accent);}
@@ -1637,7 +1640,26 @@ function setListMode(mode) {
   document.getElementById('viewList').classList.toggle('on', mode);
   document.querySelector('.main').style.display = mode ? 'none' : '';
   document.getElementById('listView').style.display = mode ? 'block' : 'none';
-  if (mode) { initListWeek(); renderListView(); }
+  if (mode) {
+    resetZoom();
+    initListWeek();
+    renderListView();
+  }
+}
+
+// Reset any pinch-zoom carried over from tile view so list view renders 1:1.
+// Briefly pins the viewport to a fixed scale, then restores the zoomable meta
+// so the user can still pinch within list view afterwards. Tile view's meta
+// tag is the same one, but this only runs when ENTERING list view.
+function resetZoom() {
+  const vp = document.querySelector('meta[name="viewport"]');
+  if (!vp) return;
+  const zoomable = 'width=device-width, initial-scale=1.0';
+  vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
+  // Force reflow, then restore zoomability on the next frame
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => vp.setAttribute('content', zoomable));
+  });
 }
 
 function renderListView() {
@@ -1666,7 +1688,7 @@ function renderListView() {
     weekTotal += dist;
     if (isToday) dailyTotal = distStr;
     const bar = LV_BUCKET_COLORS[day.bucket] || 'var(--line)';
-    daysHTML += `<div class="lv-day-row${isToday?' lv-today':''}${isRest?' lv-rest':''}">
+    daysHTML += `<div class="lv-day-row${isToday?' lv-today':''}${isRest?' lv-rest':''}" data-di="${di}">
       <div class="lv-date"><span class="lv-day-name">${dayName}</span><span class="lv-day-num">${dayNum}</span></div>
       <div class="lv-bucket-bar" style="background:${bar}"></div>
       <div class="lv-content"><span class="lv-type">${day.type||'Rest'}</span>${showNote?`<span class="lv-note">${note}</span>`:''}</div>
@@ -1683,6 +1705,14 @@ function renderListCal(weekTotal, dailyTotal) {
   const today = new Date(); today.setHours(0,0,0,0);
   const planStart = firstWeekStart();
   const wsd = startDow;
+
+  // Map each calendar date in this month → its plan week index (for taps + highlight)
+  const dateToWeek = {};
+  planData.weeks.forEach((wk,wi) => wk.days.forEach((day,di) => {
+    const d = new Date(planStart); d.setDate(planStart.getDate()+wi*7+di);
+    if (d.getFullYear()===y && d.getMonth()===m) dateToWeek[d.getDate()] = wi;
+  }));
+
   const runDays = new Set();
   planData.weeks.forEach((wk,wi) => wk.days.forEach((day,di) => {
     if (['rest','xtrain','cross'].includes(day.bucket)) return;
@@ -1690,24 +1720,40 @@ function renderListCal(weekTotal, dailyTotal) {
     const d = new Date(planStart); d.setDate(planStart.getDate()+wi*7+di);
     if (d.getFullYear()===y && d.getMonth()===m) runDays.add(d.getDate());
   }));
+
   const firstDow = new Date(y,m,1).getDay();
   const offset   = (firstDow - wsd + 7) % 7;
   const daysInMonth   = new Date(y,m+1,0).getDate();
   const daysInPrevMon = new Date(y,m,0).getDate();
   const DOW = wsd===1 ? ['M','T','W','T','F','S','S'] : ['S','M','T','W','T','F','S'];
-  let cells = '';
-  for (let i=offset-1;i>=0;i--) cells+=`<div class="lv-cal-cell prev-month"><span class="lv-cal-num">${daysInPrevMon-i}</span><span class="lv-cal-dot"></span></div>`;
-  for (let d=1;d<=daysInMonth;d++) {
-    const dt=new Date(y,m,d), isTod=dt.getTime()===today.getTime(), hasR=runDays.has(d);
-    cells+=`<div class="lv-cal-cell${isTod?' is-today':''}${hasR?' has-run':''}"><span class="lv-cal-num">${d}</span><span class="lv-cal-dot"></span></div>`;
+
+  // Flat list of cells, then chunk into rows of 7
+  const cellList = [];
+  for (let i=offset-1;i>=0;i--) cellList.push({num:daysInPrevMon-i, prev:true, date:null});
+  for (let d=1;d<=daysInMonth;d++) cellList.push({num:d, prev:false, date:d});
+  let trailing = 1;
+  while (cellList.length % 7 !== 0) cellList.push({num:trailing++, prev:true, date:null});
+
+  let rowsHTML = '';
+  for (let r=0; r<cellList.length; r+=7) {
+    const rowCells = cellList.slice(r, r+7);
+    // A row is highlighted if any of its in-month dates belong to the active week
+    const rowInWeek = rowCells.some(c => c.date!=null && dateToWeek[c.date] === listWeekIdx);
+    let cellsHTML = '';
+    rowCells.forEach(c => {
+      const isTod = c.date!=null && new Date(y,m,c.date).getTime()===today.getTime();
+      const hasR  = c.date!=null && runDays.has(c.date);
+      const wkAttr = (c.date!=null && dateToWeek[c.date]!==undefined) ? ` data-week="${dateToWeek[c.date]}"` : '';
+      cellsHTML += `<div class="lv-cal-cell${c.prev?' prev-month':''}${isTod?' is-today':''}${hasR?' has-run':''}"${wkAttr}><span class="lv-cal-num">${c.num}</span><span class="lv-cal-dot"></span></div>`;
+    });
+    rowsHTML += `<div class="lv-cal-row${rowInWeek?' in-week':''}">${cellsHTML}</div>`;
   }
-  const rows=Math.ceil((offset+daysInMonth)/7);
-  for (let d=1;d<=rows*7-(offset+daysInMonth);d++) cells+=`<div class="lv-cal-cell prev-month"><span class="lv-cal-num">${d}</span><span class="lv-cal-dot"></span></div>`;
+
   const wt=(weekTotal||0).toFixed(1), dt2=dailyTotal!==null?dailyTotal+' '+unit:'—';
   return `<div class="lv-cal lv-swap">
     <div class="lv-cal-hdr"><span class="lv-cal-month">${LV_MONTH_NAMES[m]} ${y}</span><span class="lv-cal-overview">Monthly overview</span></div>
     <div class="lv-cal-dow">${DOW.map(l=>`<span>${l}</span>`).join('')}</div>
-    <div class="lv-cal-grid">${cells}</div>
+    <div class="lv-cal-grid">${rowsHTML}</div>
     <div class="lv-totals">
       <div><div class="lv-total-lbl">Weekly total</div><div class="lv-total-val">${wt} ${unit}</div></div>
       <div style="text-align:center"><div class="lv-week-badge">Week</div><div class="lv-week-num">${listWeekIdx+1}</div></div>
@@ -1734,23 +1780,84 @@ function animateListSwap(axis, dir, mutate) {
   },180);
 }
 
+function goToWeek(target, dir) {
+  if (target === listWeekIdx || target < 0 || target >= planData.weeks.length) return;
+  animateListSwap('x', dir, () => { listWeekIdx = target; renderListView(); });
+}
+
+let _pressTimer=null, _dragRow=null, _dragStartY=0, _dragStartX=0;
+
 function setupLvSwipe() {
   const lv=document.getElementById('listView'); if(!lv) return;
   const days=lv.querySelector('.lv-days'), cal=lv.querySelector('.lv-cal');
+
   if (days) {
-    days.addEventListener('touchstart',e=>{_lvTX=e.touches[0].clientX;_lvTY=e.touches[0].clientY;_lvMoved=false;},{passive:true});
+    // Swipe to change week (inverted: swipe right → next week, swipe left → prev week)
+    days.addEventListener('touchstart',e=>{
+      _lvTX=e.touches[0].clientX;_lvTY=e.touches[0].clientY;_lvMoved=false;
+    },{passive:true});
     days.addEventListener('touchmove',e=>{
+      if(_dragRow) return;  // drag in progress — don't treat as swipe
       const dx=e.touches[0].clientX-_lvTX,dy=e.touches[0].clientY-_lvTY;
       if(Math.abs(dx)>Math.abs(dy)){ e.preventDefault(); _lvMoved=true; }
     },{passive:false});
     days.addEventListener('touchend',e=>{
+      if(_dragRow) return;
       const dx=e.changedTouches[0].clientX-_lvTX,dy=e.changedTouches[0].clientY-_lvTY;
       if(Math.abs(dx)<40||Math.abs(dy)>Math.abs(dx))return;
-      if(dx<0&&listWeekIdx<planData.weeks.length-1) animateListSwap('x',1,()=>{listWeekIdx++;renderListView();});
-      else if(dx>0&&listWeekIdx>0) animateListSwap('x',-1,()=>{listWeekIdx--;renderListView();});
+      // INVERTED: swipe left (dx<0) → previous week; swipe right (dx>0) → next week
+      if(dx<0&&listWeekIdx>0) goToWeek(listWeekIdx-1,-1);
+      else if(dx>0&&listWeekIdx<planData.weeks.length-1) goToWeek(listWeekIdx+1,1);
     },{passive:true});
+
+    // Long-press a day row to lift & drag-swap
+    days.querySelectorAll('.lv-day-row').forEach(row => {
+      row.addEventListener('touchstart',e=>{
+        _dragStartX=e.touches[0].clientX; _dragStartY=e.touches[0].clientY;
+        _pressTimer=setTimeout(()=>{
+          _dragRow=row; row.classList.add('lv-lifted');
+          if(navigator.vibrate) navigator.vibrate(15);
+        },350);
+      },{passive:true});
+      row.addEventListener('touchmove',e=>{
+        if(!_dragRow){
+          // moved before long-press fired → it's a scroll/swipe, cancel the press
+          if(Math.abs(e.touches[0].clientY-_dragStartY)>10||Math.abs(e.touches[0].clientX-_dragStartX)>10) clearTimeout(_pressTimer);
+          return;
+        }
+        e.preventDefault();
+        const t=e.touches[0];
+        const over=document.elementsFromPoint(t.clientX,t.clientY).find(el=>el.classList&&el.classList.contains('lv-day-row')&&el!==_dragRow);
+        days.querySelectorAll('.lv-drop-target').forEach(x=>x.classList.remove('lv-drop-target'));
+        if(over) over.classList.add('lv-drop-target');
+      },{passive:false});
+      row.addEventListener('touchend',e=>{
+        clearTimeout(_pressTimer);
+        if(!_dragRow) return;
+        const t=e.changedTouches[0];
+        const over=document.elementsFromPoint(t.clientX,t.clientY).find(el=>el.classList&&el.classList.contains('lv-day-row')&&el!==_dragRow);
+        if(over){
+          const a=+_dragRow.dataset.di, b=+over.dataset.di;
+          const wk=planData.weeks[listWeekIdx];
+          const da=wk.days[a], db=wk.days[b];
+          // Swap workout content only (match tile view) — day/date columns stay put
+          [da.type,db.type]=[db.type,da.type];
+          [da.bucket,db.bucket]=[db.bucket,da.bucket];
+          [da.dist,db.dist]=[db.dist,da.dist];
+          [da.note,db.note]=[db.note,da.note];
+          [da.noteKm,db.noteKm]=[db.noteKm,da.noteKm];
+          schedulePlanSave();
+        }
+        _dragRow.classList.remove('lv-lifted');
+        days.querySelectorAll('.lv-drop-target').forEach(x=>x.classList.remove('lv-drop-target'));
+        _dragRow=null;
+        renderListView();
+      });
+    });
   }
+
   if (cal) {
+    // Swipe to change month (inverted: swipe up → previous month, swipe down → next)
     cal.addEventListener('touchstart',e=>{_calTX=e.touches[0].clientX;_calTY=e.touches[0].clientY;_calMoved=false;},{passive:true});
     cal.addEventListener('touchmove',e=>{
       const dx=e.touches[0].clientX-_calTX,dy=e.touches[0].clientY-_calTY;
@@ -1760,12 +1867,22 @@ function setupLvSwipe() {
       const dx=e.changedTouches[0].clientX-_calTX,dy=e.changedTouches[0].clientY-_calTY;
       if(Math.abs(dy)<40||Math.abs(dx)>Math.abs(dy))return;
       const d=listCalMonth;
-      const dir=dy<0?1:-1;
+      // INVERTED: swipe up (dy<0) → previous month; swipe down (dy>0) → next month
+      const dir = dy<0 ? -1 : 1;
       animateListSwap('y',dir,()=>{
-        listCalMonth=dir>0?new Date(d.getFullYear(),d.getMonth()+1,1):new Date(d.getFullYear(),d.getMonth()-1,1);
+        listCalMonth = dir<0 ? new Date(d.getFullYear(),d.getMonth()-1,1) : new Date(d.getFullYear(),d.getMonth()+1,1);
         renderListView();
       });
     },{passive:true});
+
+    // Tap a calendar day → jump the list to that day's plan week
+    cal.querySelectorAll('.lv-cal-cell[data-week]').forEach(cell => {
+      cell.addEventListener('click',()=>{
+        const target=+cell.dataset.week;
+        if(target===listWeekIdx) return;
+        goToWeek(target, target>listWeekIdx?1:-1);
+      });
+    });
   }
 }
 
