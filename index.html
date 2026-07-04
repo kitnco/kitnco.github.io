@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stride — Run Plan</title>
+<title>RunKit — Run Plan</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F8F5E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RunKit">
 <style>
 :root{
   --bg:#F7F6F3;
@@ -1727,6 +1733,12 @@ function setupLvSwipe() {
 
 document.getElementById('viewTiles').addEventListener('click', ()=>setListMode(false));
 document.getElementById('viewList').addEventListener('click',  ()=>setListMode(true));
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>
