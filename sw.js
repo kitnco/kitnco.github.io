@@ -1,7 +1,9 @@
-const CACHE = 'runkit-v6';
+const CACHE = 'runkit-v7';
 const ASSETS = [
   './', './index.html', './library.html',
-  './manifest.json', './icon-192.png', './icon-512.png'
+  './state.js', './plans.json',
+  './manifest.json', './icon-192.png', './icon-512.png',
+  './apple-touch-icon.png', './icon-maskable-512.png'
 ];
 
 self.addEventListener('install', e => {
