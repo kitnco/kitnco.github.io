@@ -406,6 +406,131 @@ body.dark .btn-use{color:#0B1410;}
 .cal-copy-btn{display:flex;align-items:center;gap:5px;font-size:12px;flex-shrink:0;}
 .cal-subscribe-btn{display:inline-flex !important;align-items:center;font-size:12.5px;margin-top:10px;padding:7px 14px;}
 </style>
+<style id="mbStyles">
+/* ══ ?menubar=1 compact companion — reuses planData + State sync ══
+   Fully namespaced under #mbRoot / body.menubar-mode so the normal
+   calendar CSS is never touched. */
+body.menubar-mode{margin:0;background:var(--bg);overflow:hidden}
+body.menubar-mode > *:not(#mbRoot):not(#syncModalBg):not(script){display:none !important}
+#mbRoot{display:none;box-sizing:border-box;
+  font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;color:var(--ink)}
+body.menubar-mode #mbRoot{display:block}
+#mbRoot[data-view="v1"]{width:336px}
+#mbRoot[data-view="v2"]{width:744px}
+#mbRoot[data-view="v1"] .mb-v2{display:none}
+#mbRoot[data-view="v2"] .mb-v1{display:none}
+
+/* header row 1 */
+#mbRoot .mb-head{display:flex;align-items:center;padding:10px 12px 4px;gap:6px}
+#mbRoot .mb-rswrap{position:relative;min-width:0}
+#mbRoot .mb-switcher{display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;
+  padding:2px 4px;border-radius:6px;font-family:inherit;color:var(--ink);font-size:15px;font-weight:800;
+  letter-spacing:-.3px;max-width:180px;min-width:0}
+#mbRoot[data-view="v2"] .mb-switcher{font-size:17px;max-width:320px}
+#mbRoot .mb-switcher:hover{background:var(--accent-soft)}
+#mbRoot .mb-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mbRoot .mb-chev{flex-shrink:0;color:var(--sub)}
+#mbRoot .mb-spacer{flex:1}
+#mbRoot .mb-open{flex-shrink:0;font-family:inherit;font-size:11.5px;font-weight:700;padding:5px 11px;
+  border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+#mbRoot .mb-open:hover{filter:brightness(1.05)}
+#mbRoot .mb-open:active{transform:translateY(.5px)}
+#mbRoot .mb-sync{background:none;border:none;cursor:pointer;color:var(--sub);padding:4px;border-radius:6px;display:flex;flex-shrink:0}
+#mbRoot .mb-sync:hover{background:var(--accent-soft);color:var(--accent)}
+#mbRoot .mb-sync.mb-spin svg{animation:mbspin .7s ease}
+@keyframes mbspin{to{transform:rotate(360deg)}}
+
+/* cartoon settings gear + version chooser (right, just left of sync) */
+#mbRoot .mb-gearwrap{position:relative;flex-shrink:0}
+#mbRoot .mb-gear{background:none;border:none;cursor:pointer;padding:3px;border-radius:8px;display:flex;
+  color:var(--sub);transition:transform .2s ease, background .12s}
+#mbRoot .mb-gear:hover{background:var(--accent-soft);color:var(--accent);transform:rotate(38deg) scale(1.08)}
+#mbRoot .mb-gear:active{transform:rotate(70deg) scale(.94)}
+#mbRoot .mb-gear.mb-pop{animation:mbgear .5s ease}
+@keyframes mbgear{0%{transform:rotate(0)}55%{transform:rotate(200deg) scale(1.18)}100%{transform:rotate(180deg) scale(1)}}
+#mbRoot .mb-gearmenu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.14);z-index:60;min-width:184px;overflow:hidden}
+#mbRoot .mb-gearmenu.mb-show{display:block}
+#mbRoot .mb-gmtitle{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);padding:9px 14px 5px}
+#mbRoot .mb-gmopt{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);padding:9px 14px;text-align:left;border-top:1px solid var(--line)}
+#mbRoot .mb-gmopt:hover{background:var(--accent-soft)}
+#mbRoot .mb-gmopt .mb-check{width:14px;flex-shrink:0;color:var(--accent);opacity:0}
+#mbRoot .mb-gmopt.mb-active .mb-check{opacity:1}
+#mbRoot .mb-gmopt .mb-gmsub{color:var(--sub);font-weight:500;font-size:11.5px;margin-left:auto}
+
+/* race dropdown from switcher */
+#mbRoot .mb-rdrop{display:none;position:absolute;top:calc(100% + 6px);left:0;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.12);z-index:50;min-width:220px;overflow:hidden}
+#mbRoot .mb-rdrop.mb-show{display:block}
+#mbRoot .mb-ritem{display:block;width:100%;background:none;border:none;cursor:pointer;font-family:inherit;
+  font-size:13px;font-weight:600;color:var(--ink);padding:10px 14px;text-align:left;border-bottom:1px solid var(--line)}
+#mbRoot .mb-ritem:hover{background:var(--accent-soft)}
+#mbRoot .mb-ritem.mb-active{color:var(--accent)}
+#mbRoot .mb-ritem:last-child{border-bottom:none}
+
+/* header row 2 (moved-up race date info) */
+#mbRoot .mb-subhead{display:flex;align-items:center;gap:8px;padding:0 13px 8px;border-bottom:1px solid var(--line)}
+#mbRoot .mb-date{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#mbRoot .mb-raceinfo{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;flex-shrink:0}
+#mbRoot .mb-rdot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0}
+#mbRoot .mb-count{color:var(--accent);font-weight:700}
+
+/* today card (V1) */
+#mbRoot .mb-today{background:var(--panel);border:1px solid var(--tile-border);border-radius:10px;margin:10px 12px 0;
+  padding:10px 12px 11px;position:relative;overflow:hidden}
+#mbRoot .mb-abar{position:absolute;left:0;top:0;bottom:0;width:4px}
+#mbRoot .mb-tlabel{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--sub);text-transform:uppercase;margin:0 0 3px 6px}
+#mbRoot .mb-ttype{font-size:14px;font-weight:600;margin:0 0 2px 6px}
+#mbRoot .mb-tdist{font-size:20px;font-weight:700;margin:0 0 3px 6px}
+#mbRoot .mb-tdist small{font-size:12px;font-weight:600;color:var(--sub);margin-left:2px}
+#mbRoot .mb-tnote{font-size:11px;color:var(--sub);margin:0 0 0 6px;line-height:1.35;min-height:15px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* V1 mini cells */
+#mbRoot .mb-weekwrap{margin:10px 12px 0}
+#mbRoot .mb-wkhdr{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 5px}
+#mbRoot .mb-wkhdr .mb-wk{font-size:11px;font-weight:700;color:var(--sub)}
+#mbRoot .mb-total{font-size:11px;font-weight:700;color:var(--accent)}
+#mbRoot .mb-week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+#mbRoot .mb-cell{background:var(--panel);border:1px solid var(--tile-border);border-radius:7px;text-align:center;
+  padding:5px 2px 6px;cursor:grab;user-select:none;transition:transform .12s ease, box-shadow .12s ease, border-color .12s}
+#mbRoot .mb-cell .mb-d{font-size:9px;font-weight:700;color:var(--sub);letter-spacing:.04em}
+#mbRoot .mb-cell .mb-ab{font-size:10px;font-weight:800;margin-top:3px;letter-spacing:.02em}
+#mbRoot .mb-cell .mb-m{font-size:11px;font-weight:700;margin-top:2px}
+#mbRoot .mb-cell.mb-rest .mb-m{color:var(--sub);font-weight:600}
+#mbRoot .mb-cell.mb-todaycell{background:var(--accent-soft);border-color:var(--accent)}
+#mbRoot .mb-cell.mb-todaycell .mb-d{color:var(--accent)}
+#mbRoot .mb-cell.mb-lift{transform:scale(1.07);box-shadow:0 6px 16px rgba(0,0,0,.22);cursor:grabbing;opacity:.9}
+#mbRoot .mb-cell.mb-drop{border-color:var(--accent);border-style:dashed;background:var(--accent-soft)}
+
+/* V2 square-ish tiles mirroring desktop .day-cell aspect (146:118) */
+#mbRoot .mb-v2{padding-top:10px}
+#mbRoot .mb-wkhdr2{margin:0 14px 6px}
+#mbRoot .mb-dowrow{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:2px 12px 4px}
+#mbRoot .mb-dh{font-size:9.5px;font-weight:700;color:var(--sub);letter-spacing:.05em;text-align:left;padding-left:11px}
+#mbRoot .mb-dh .mb-dn{color:var(--ink);opacity:.5;margin-left:3px;font-weight:600}
+#mbRoot .mb-dh.mb-todayh{color:var(--accent)}
+#mbRoot .mb-dweek{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:0 12px}
+#mbRoot .mb-tile{background:var(--tile);border-radius:10px;border:1.5px solid var(--tile-border);padding:10px 11px;
+  aspect-ratio:146 / 118;min-height:0;box-sizing:border-box;cursor:grab;user-select:none;display:flex;flex-direction:column;
+  gap:4px;overflow:hidden;position:relative;transition:transform .12s ease, box-shadow .12s ease, border-color .12s}
+#mbRoot .mb-tiletype{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--sub);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+#mbRoot .mb-tilerow{display:flex;align-items:baseline;gap:3px}
+#mbRoot .mb-tiledist{font-size:19px;font-weight:700;color:var(--ink)}
+#mbRoot .mb-tileunit{font-size:11.5px;color:var(--sub);font-weight:700}
+#mbRoot .mb-tilenote{color:var(--sub);font-size:11.5px;line-height:1.35;flex:1;text-align:left;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#mbRoot .mb-tile.mb-todaycell{box-shadow:0 0 0 2px var(--accent)}
+#mbRoot .mb-tile.mb-lift{transform:scale(1.05);box-shadow:0 6px 16px rgba(0,0,0,.22);cursor:grabbing;opacity:.92}
+#mbRoot .mb-tile.mb-drop{border-color:var(--accent);border-style:dashed}
+
+/* footer status */
+#mbRoot .mb-synced{font-size:10px;color:var(--sub);text-align:center;padding:11px 0}
+#mbRoot .mb-synced.mb-clickable{cursor:pointer;color:var(--accent);font-weight:600}
+</style>
+
 </head>
 <body>
 
@@ -1003,6 +1128,8 @@ function render() {
       requestAnimationFrame(() => cw.scrollIntoView({ block: 'center' }));
     }
   }
+
+  if (window.MENUBAR) mbRender();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1474,6 +1601,8 @@ function setListMode(mode) {
     resetZoom();
     initListWeek();
     renderListView();
+  } else {
+    render();   // rebuild tile grid from planData so List-view edits are reflected
   }
 }
 
@@ -1756,6 +1885,230 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// ?menubar=1 COMPACT COMPANION
+// Reuses the real app: planData, firstWeekStart(), getTypeBucket(),
+// weekMileage(), convertDist(), switchRace(), schedulePlanSave(), State.
+// All new identifiers are mb*/MB_* and the UI lives under #mbRoot, so normal
+// calendar mode is unaffected (guarded by window.MENUBAR).
+// ══════════════════════════════════════════════════════════════════════════
+const MB_NATIVE = !!(window.webkit && window.webkit.messageHandlers);
+function mbNative(n,p){ try{ window.webkit.messageHandlers[n].postMessage(p||{}); }catch(e){} }
+const MB_VKEY = 'runkit_menubar_version';
+let mbMem = {}, mbDrag = null, mbLastSync = 0;
+function mbStore(k,v){ try{ localStorage.setItem(k,v);}catch(e){ mbMem[k]=v; } }
+function mbLoad(k){ try{ const v=localStorage.getItem(k); return v==null?mbMem[k]:v;}catch(e){ return mbMem[k]; } }
+function mbEsc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const MB_ABBR   = {rest:'Rest',easy:'GA',recovery:'Rec.',medlong:'ML',long:'Long',lt:'LT',mp:'MP',vo2:'VO\u2082',race:'Race',tuneup:'T-up',xtrain:'XT',cross:'XT'};
+const MB_ABCOLOR= {rest:'#9a9894',easy:'#1F8F5E',recovery:'#4a6080',medlong:'#1a8a8a',long:'#1F8F5E',lt:'#9a8600',mp:'#1F8F5E',vo2:'#8a3ab8',race:'#C2483A',tuneup:'#b83a72',xtrain:'#6B6E73',cross:'#6B6E73'};
+const MB_BG     = {rest:'#E8E7E5',recovery:'#E5E8F0',easy:'#E5F0E8',lt:'#FDFACC',mp:'#D8F0E3',vo2:'#EAD8F5',race:'#F5D8D8',tuneup:'#FDE8F0',xtrain:'#E8E7E5',cross:'#E8E7E5'};
+const MB_BORDER = {long:'#1F8F5E',medlong:'#1a8a8a',mp:'#1F8F5E',race:'#C2483A',tuneup:'#d4689a'};
+const MB_DOW=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const MB_DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MB_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function mbBucket(d){ return d.bucket || (typeof getTypeBucket==='function'?getTypeBucket(d.type):'') || 'easy'; }
+function mbAbbrev(d){ const b=mbBucket(d); if(MB_ABBR[b]) return MB_ABBR[b];
+  const w=(d.type||'').trim().split(/[\s,/]+/)[0]||'\u2014'; return w.length<=4?w:w.slice(0,3)+'.'; }
+function mbIsTime(s){ return /min|hr/i.test(s||''); }
+function mbDist(d){ if(!d.dist) return '\u2014';
+  const raw=(typeof unit!=='undefined' && unit==='km') ? convertDist(d.dist,true) : d.dist;
+  return String(raw).replace('-','\u2013'); }
+function mbUnit(d){ if(!d.dist||mbIsTime(d.dist)) return ''; return (typeof unit!=='undefined'&&unit==='km')?'km':'mi'; }
+function mbTotal(week){ const mi=(typeof weekMileage==='function')?weekMileage(week):0;
+  return (typeof unit!=='undefined'&&unit==='km') ? Math.round(mi*1.60934)+' km planned' : Math.round(mi)+' mi planned'; }
+
+function mbCurWeek(){ if(!planData||!planData.weeks||!planData.weeks.length) return 0;
+  const start=firstWeekStart(); const t=new Date(); t.setHours(0,0,0,0);
+  const el=Math.floor((t-start)/86400000);
+  return Math.max(0, Math.min(Math.floor(el/7), planData.weeks.length-1)); }
+function mbWeekStart(cwi){ const s=firstWeekStart(); s.setDate(s.getDate()+cwi*7); s.setHours(0,0,0,0); return s; }
+
+// ── render the compact view from the live planData ──
+function mbRender(){
+  const root=document.getElementById('mbRoot');
+  if(!root||!planData||!planData.weeks||!planData.weeks.length) return;
+  const cwi=mbCurWeek(), week=planData.weeks[cwi], days=week.days||[];
+  const ws=mbWeekStart(cwi), today=new Date(); today.setHours(0,0,0,0);
+  const dates=days.map((_,i)=>{ const d=new Date(ws); d.setDate(ws.getDate()+i); d.setHours(0,0,0,0); return d; });
+  const todayIdx=dates.findIndex(d=>d.getTime()===today.getTime());
+
+  document.getElementById('mbName').textContent = (typeof currentRaceName==='function' && currentRaceName()) || 'RunKit';
+  mbRenderRaceList();
+
+  document.getElementById('mbDate').textContent =
+    `${MB_DAY[today.getDay()]}, ${MB_MON[today.getMonth()]} ${today.getDate()} \u00b7 Wk ${cwi+1} of ${planData.weeks.length}`;
+
+  const rd = (typeof raceDate!=='undefined' && raceDate) ? new Date(raceDate+'T00:00:00') : null;
+  const rinfo=document.getElementById('mbRaceInfo');
+  if(rd){ const left=Math.round((rd-today)/86400000);
+    rinfo.innerHTML=`<span class="mb-rdot"></span>Race day \u00b7 ${MB_MON[rd.getMonth()]} ${rd.getDate()} \u00b7 `+
+      `<span class="mb-count">${left>=0?left+' day'+(left===1?'':'s'):'done'}</span>`;
+  } else rinfo.textContent='';
+
+  // V1: today card + mini cells
+  const tIdx=todayIdx>=0?todayIdx:0, t=days[tIdx]||{}, tb=mbBucket(t);
+  document.getElementById('mbToday').innerHTML=
+    `<div class="mb-abar" style="background:${MB_ABCOLOR[tb]||'var(--sub)'}"></div>`+
+    `<p class="mb-tlabel">${todayIdx>=0?'Today':'This week'} \u00b7 Week ${cwi+1} of ${planData.weeks.length}</p>`+
+    `<p class="mb-ttype">${mbEsc(t.type||'\u2014')}</p>`+
+    `<p class="mb-tdist">${mbDist(t)}${mbUnit(t)?'<small>'+mbUnit(t)+'</small>':''}</p>`+
+    `<p class="mb-tnote">${mbEsc(t.note||'')}</p>`;
+  document.getElementById('mbWk1').textContent=`This week \u00b7 Wk ${cwi+1} of ${planData.weeks.length}`;
+  document.getElementById('mbTot1').textContent=mbTotal(week);
+  const w1=document.getElementById('mbWeek1'); w1.innerHTML='';
+  days.forEach((d,i)=>{ const b=mbBucket(d), c=document.createElement('div');
+    c.className='mb-cell'+(b==='rest'?' mb-rest':'')+(i===todayIdx?' mb-todaycell':'');
+    c.draggable=true; c.dataset.i=i;
+    c.innerHTML=`<div class="mb-d">${MB_DOW[dates[i].getDay()]}</div>`+
+      `<div class="mb-ab" style="color:${MB_ABCOLOR[b]||'var(--sub)'}">${mbEsc(mbAbbrev(d))}</div>`+
+      `<div class="mb-m">${mbDist(d)}</div>`;
+    mbWireSwap(c,cwi); w1.appendChild(c); });
+
+  // V2: square-ish desktop-mirror tiles
+  document.getElementById('mbTot2').textContent=mbTotal(week);
+  const dow=document.getElementById('mbDow'); dow.innerHTML='';
+  days.forEach((d,i)=>{ const h=document.createElement('div');
+    h.className='mb-dh'+(i===todayIdx?' mb-todayh':'');
+    h.innerHTML=`${MB_DOW[dates[i].getDay()]}<span class="mb-dn">${dates[i].getDate()}</span>`; dow.appendChild(h); });
+  const w2=document.getElementById('mbWeek2'); w2.innerHTML='';
+  days.forEach((d,i)=>{ const b=mbBucket(d), tile=document.createElement('div');
+    tile.className='mb-tile'+(i===todayIdx?' mb-todaycell':'');
+    if(MB_BG[b]) tile.style.background=MB_BG[b];
+    if(MB_BORDER[b]){ tile.style.borderColor=MB_BORDER[b]; tile.style.borderWidth='2px'; }
+    tile.draggable=true; tile.dataset.i=i;
+    const tc=(b==='long'||b==='mp')?'var(--accent)':(b==='medlong'?'#1a8a8a':(b==='tuneup'?'#b83a72':''));
+    tile.innerHTML=`<div class="mb-tiletype"${tc?` style="color:${tc}"`:''}>${mbEsc(d.type||'\u2014')}</div>`+
+      `<div class="mb-tilerow"><span class="mb-tiledist">${mbDist(d)}</span>${mbUnit(d)?'<span class="mb-tileunit">'+mbUnit(d)+'</span>':''}</div>`+
+      `<div class="mb-tilenote">${mbEsc(d.note||'')}</div>`;
+    mbWireSwap(tile,cwi); w2.appendChild(tile); });
+
+  mbUpdateStrip(t);
+  mbSyncSize();
+}
+
+function mbRenderRaceList(){
+  const box=document.getElementById('mbRaceDrop'); if(!box) return;
+  const races=State.get('races')||{}; box.innerHTML='';
+  Object.entries(races).forEach(([id,r])=>{ const b=document.createElement('button');
+    b.className='mb-ritem'+(id===activeRaceId?' mb-active':'');
+    b.textContent=r.raceName||'Unnamed race';
+    b.addEventListener('click',()=>{ box.classList.remove('mb-show'); switchRace(id); });
+    box.appendChild(b); });
+}
+
+// ── drag-to-swap → same content-swap as tile/list, then push to gist + ICS ──
+function mbWireSwap(el,cwi){
+  el.addEventListener('dragstart',e=>{ mbDrag=+el.dataset.i; el.classList.add('mb-lift'); e.dataTransfer.effectAllowed='move'; });
+  el.addEventListener('dragend',()=>{ el.classList.remove('mb-lift'); mbClearDrop(); });
+  el.addEventListener('dragover',e=>{ e.preventDefault(); if(+el.dataset.i!==mbDrag) el.classList.add('mb-drop'); });
+  el.addEventListener('dragleave',()=>el.classList.remove('mb-drop'));
+  el.addEventListener('drop',e=>{ e.preventDefault(); const to=+el.dataset.i;
+    if(mbDrag!==null && to!==mbDrag){
+      const wk=planData.weeks[cwi], a=wk.days[mbDrag], b=wk.days[to];
+      [a.type,b.type]=[b.type,a.type]; [a.bucket,b.bucket]=[b.bucket,a.bucket];
+      [a.dist,b.dist]=[b.dist,a.dist]; [a.note,b.note]=[b.note,a.note];
+      [a.noteKm,b.noteKm]=[b.noteKm,a.noteKm];
+      schedulePlanSave();   // debounced Gist push + ICS regen (same as desktop/list)
+      render();             // repaints the (hidden) grid AND, via the hook, mbRender()
+      mbNative('persistSwap',{from:mbDrag,to,week:cwi});
+    }
+    mbDrag=null; mbClearDrop(); });
+}
+function mbClearDrop(){ document.querySelectorAll('#mbRoot .mb-drop').forEach(x=>x.classList.remove('mb-drop')); }
+
+// ── layout (gear chooser) ──
+function mbSetView(v){ const root=document.getElementById('mbRoot'); root.dataset.view=v;
+  document.querySelectorAll('#mbRoot .mb-gmopt').forEach(o=>o.classList.toggle('mb-active',o.dataset.v===v));
+  document.getElementById('mbGearMenu').classList.remove('mb-show');
+  mbStore(MB_VKEY,v); mbNative('setVersion',{version:v}); mbRender(); }
+function mbToggleGear(){ const m=document.getElementById('mbGearMenu'), g=document.getElementById('mbGear');
+  const open=m.classList.toggle('mb-show'); if(open){ g.classList.remove('mb-pop'); void g.offsetWidth; g.classList.add('mb-pop'); } }
+
+// ── sync + status + connect (reuse the app's State + sync modal) ──
+function mbStatus(s){ if(s==='synced') mbLastSync=Date.now(); mbPaintStatus(); }
+function mbPaintStatus(){ const el=document.getElementById('mbSynced'); if(!el) return;
+  const s=State.status(); el.classList.remove('mb-clickable');
+  if(s==='offline'){ el.textContent='Not connected \u2014 tap to connect'; el.classList.add('mb-clickable'); return; }
+  if(s==='syncing'){ el.textContent='Syncing\u2026'; return; }
+  if(s==='error'){ el.textContent='Sync error \u2014 tap to retry'; el.classList.add('mb-clickable'); return; }
+  const mins=mbLastSync?Math.round((Date.now()-mbLastSync)/60000):0;
+  el.textContent=`Synced ${(!mbLastSync||mins<1)?'just now':mins+' min ago'} \u00b7 Gist \u2713`; }
+function mbDoSync(){ const btn=document.getElementById('mbSync');
+  btn.classList.remove('mb-spin'); void btn.offsetWidth; btn.classList.add('mb-spin');
+  if(!State.hasPAT()){ mbOpenConnect(); return; }
+  mbNative('sync');
+  Promise.resolve(State.init()).then(()=>{ if(typeof applyStateToUI==='function') applyStateToUI(); }).catch(()=>{}); }
+function mbOpenConnect(){ const m=document.getElementById('syncModalBg'); if(m) m.classList.add('open'); }
+function mbOpenApp(){ if(MB_NATIVE) mbNative('openApp'); else window.open(location.origin+location.pathname,'_blank'); }
+
+function mbUpdateStrip(t){ const rest=!t||mbBucket(t)==='rest'||!t.dist;
+  mbNative('setStatusTitle',{ title: rest?'':(mbDist(t)+(mbUnit(t)?' '+mbUnit(t):'')), rest }); }
+function mbSyncSize(){ requestAnimationFrame(()=>{ const r=document.getElementById('mbRoot');
+  if(r) mbNative('resize',{ w:Math.ceil(r.offsetWidth), h:Math.ceil(r.offsetHeight) }); }); }
+
+// ── build the popover DOM once ──
+function mbBuildDom(){
+  const cog='<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'+
+    '<path d="M12 1.6c-.9 0-1.65.68-1.74 1.57l-.07.72a8.3 8.3 0 0 0-1.5.63l-.57-.45a1.75 1.75 0 0 0-2.35.16l-.4.4a1.75 1.75 0 0 0-.16 2.35l.45.57c-.26.47-.47.98-.63 1.5l-.72.07A1.75 1.75 0 0 0 1.6 12c0 .9.68 1.65 1.57 1.74l.72.07c.16.52.37 1.03.63 1.5l-.45.57a1.75 1.75 0 0 0 .16 2.35l.4.4c.63.63 1.63.7 2.35.16l.57-.45c.47.26.98.47 1.5.63l.07.72c.09.89.84 1.57 1.74 1.57s1.65-.68 1.74-1.57l.07-.72c.52-.16 1.03-.37 1.5-.63l.57.45c.72.54 1.72.47 2.35-.16l.4-.4c.63-.63.7-1.63.16-2.35l-.45-.57c.26-.47.47-.98.63-1.5l.72-.07A1.75 1.75 0 0 0 22.4 12c0-.9-.68-1.65-1.57-1.74l-.72-.07a8.3 8.3 0 0 0-.63-1.5l.45-.57a1.75 1.75 0 0 0-.16-2.35l-.4-.4a1.75 1.75 0 0 0-2.35-.16l-.57.45a8.3 8.3 0 0 0-1.5-.63l-.07-.72A1.75 1.75 0 0 0 12 1.6Z"/>'+
+    '<circle cx="12" cy="12" r="3.4" fill="var(--panel)"/></svg>';
+  const chk='<svg class="mb-check" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7.5 5.5,11 12,3.5"/></svg>';
+  const chev='<svg class="mb-chev" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="2,4 6,8 10,4"/></svg>';
+  const arrows='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.6 6.2A6 6 0 0 0 3.2 4.4L2 5.8"/><polyline points="2,2.4 2,5.8 5.4,5.8"/><path d="M2.4 9.8a6 6 0 0 0 10.4 1.8l1.2-1.4"/><polyline points="14,13.6 14,10.2 10.6,10.2"/></svg>';
+
+  const root=document.createElement('div'); root.id='mbRoot'; root.dataset.view='v1';
+  root.innerHTML=
+    '<div class="mb-head">'+
+      '<div class="mb-rswrap"><button class="mb-switcher" id="mbSwitcher"><span class="mb-name" id="mbName">RunKit</span>'+chev+'</button><div class="mb-rdrop" id="mbRaceDrop"></div></div>'+
+      '<div class="mb-spacer"></div>'+
+      '<button class="mb-open" id="mbOpen">Open RunKit</button>'+
+      '<div class="mb-gearwrap"><button class="mb-gear" id="mbGear" title="Layout" aria-label="Choose layout">'+cog+'</button>'+
+        '<div class="mb-gearmenu" id="mbGearMenu"><div class="mb-gmtitle">Layout</div>'+
+          '<button class="mb-gmopt" data-v="v1">'+chk+'Version 1<span class="mb-gmsub">Compact</span></button>'+
+          '<button class="mb-gmopt" data-v="v2">'+chk+'Version 2<span class="mb-gmsub">Wide</span></button>'+
+        '</div></div>'+
+      '<button class="mb-sync" id="mbSync" title="Sync now">'+arrows+'</button>'+
+    '</div>'+
+    '<div class="mb-subhead"><span class="mb-date" id="mbDate"></span><span class="mb-spacer"></span><span class="mb-raceinfo" id="mbRaceInfo"></span></div>'+
+    '<div class="mb-v1"><div class="mb-today" id="mbToday"></div><div class="mb-weekwrap">'+
+      '<div class="mb-wkhdr"><span class="mb-wk" id="mbWk1"></span><span class="mb-total" id="mbTot1"></span></div>'+
+      '<div class="mb-week" id="mbWeek1"></div></div></div>'+
+    '<div class="mb-v2"><div class="mb-wkhdr mb-wkhdr2"><span class="mb-wk">This week</span><span class="mb-total" id="mbTot2"></span></div>'+
+      '<div class="mb-dowrow" id="mbDow"></div><div class="mb-dweek" id="mbWeek2"></div></div>'+
+    '<div class="mb-synced" id="mbSynced"></div>';
+  document.body.appendChild(root);
+
+  document.getElementById('mbGear').addEventListener('click', mbToggleGear);
+  document.getElementById('mbSwitcher').addEventListener('click',()=>document.getElementById('mbRaceDrop').classList.toggle('mb-show'));
+  document.getElementById('mbOpen').addEventListener('click', mbOpenApp);
+  document.getElementById('mbSync').addEventListener('click', mbDoSync);
+  document.getElementById('mbSynced').addEventListener('click', e=>{ if(e.currentTarget.classList.contains('mb-clickable')) mbOpenConnect(); });
+  root.querySelectorAll('.mb-gmopt').forEach(o=>o.addEventListener('click',()=>mbSetView(o.dataset.v)));
+}
+
+function mbInit(){
+  window.MENUBAR = /[?&]menubar=1/.test(location.search) || location.hash==='#menubar';
+  if(!window.MENUBAR) return;
+  document.body.classList.add('menubar-mode');
+  mbBuildDom();
+  const injected=window.__runkitVersion;
+  const saved=(injected==='v1'||injected==='v2')?injected:mbLoad(MB_VKEY);
+  const v=(saved==='v2')?'v2':'v1';
+  document.getElementById('mbRoot').dataset.view=v;
+  document.querySelectorAll('#mbRoot .mb-gmopt').forEach(o=>o.classList.toggle('mb-active',o.dataset.v===v));
+  State.onStatus(mbStatus);
+  setInterval(mbPaintStatus, 30000);
+  mbPaintStatus();
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.mb-rswrap')){ const d=document.getElementById('mbRaceDrop'); if(d) d.classList.remove('mb-show'); }
+    if(!e.target.closest('.mb-gearwrap')){ const g=document.getElementById('mbGearMenu'); if(g) g.classList.remove('mb-show'); }
+  });
+  mbRender(); // paints once planData exists; render()'s hook keeps it live thereafter
+}
+mbInit();
+
 </script>
 </body>
 </html>
