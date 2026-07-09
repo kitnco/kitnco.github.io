@@ -97,7 +97,7 @@ body.dark .pagenav a.active{color:#0B1410;}
 .sync-modal input[type=password]{width:100%;font-family:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:2px;}
 .sync-modal .hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5;}
 .sync-modal .hint a{color:var(--accent);}
-.sync-modal .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.sync-modal .modal-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:18px;}
 .sync-connected{display:flex;flex-direction:column;gap:12px;}
 .sync-status-row{display:flex;align-items:center;gap:10px;}
 .sync-dot-lg{width:11px;height:11px;border-radius:50%;background:var(--sub);flex-shrink:0;}
@@ -264,8 +264,12 @@ body.dark .lv-toggle-pill button.on{color:#0B1410;}
 .lv-hdr-month{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--sub);text-transform:uppercase;flex:1;text-align:left;}
 .lv-hdr-week{font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--ink);text-transform:uppercase;flex:1;text-align:center;}
 .lv-hdr-total{font-size:13px;font-weight:800;color:var(--accent);flex:1;text-align:right;}
-.lv-day-row{display:flex;align-items:stretch;padding-left:16px;height:60px;cursor:pointer;border-bottom:1px solid var(--line);position:relative;background:var(--panel);overflow:hidden;transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;}
+.lv-day-row{display:flex;align-items:stretch;padding-left:16px;height:60px;cursor:pointer;border-bottom:1px solid var(--line);position:relative;background:var(--panel);overflow:hidden;transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 .lv-day-row.lv-lifted{transform:scale(1.03);box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:5;opacity:.96;}
+.lv-day-row.lv-source{opacity:.3;}
+.lv-ghost{position:fixed;left:0;top:0;z-index:1000;pointer-events:none;box-sizing:border-box;
+  background:var(--panel);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.28);
+  transform:scale(1.03);opacity:.97;overflow:hidden;border:1px solid var(--line);}
 .lv-day-row.lv-drop-target{background:var(--accent-soft);}
 .lv-day-row:last-child{border-bottom:none;}
 .lv-day-row.lv-today{background:color-mix(in srgb, var(--accent) 12%, transparent);}
@@ -412,6 +416,9 @@ body.dark .btn-use{color:#0B1410;}
    calendar CSS is never touched. */
 body.menubar-mode{margin:0;background:var(--bg);overflow:hidden}
 body.menubar-mode > *:not(#mbRoot):not(#syncModalBg):not(script){display:none !important}
+/* connect modal: popover is resized to fit it (see mbModalResize), this is a safety net */
+body.menubar-mode #syncModalBg{align-items:flex-start;padding:16px 0;box-sizing:border-box}
+body.menubar-mode #syncModalBg .modal{max-height:calc(100vh - 32px);overflow-y:auto}
 #mbRoot{display:none;box-sizing:border-box;
   font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif;color:var(--ink)}
 body.menubar-mode #mbRoot{display:block}
@@ -527,8 +534,10 @@ body.menubar-mode #mbRoot{display:block}
 #mbRoot .mb-tile.mb-drop{border-color:var(--accent);border-style:dashed}
 
 /* footer status */
-#mbRoot .mb-synced{font-size:10px;color:var(--sub);text-align:center;padding:11px 0}
-#mbRoot .mb-synced.mb-clickable{cursor:pointer;color:var(--accent);font-weight:600}
+#mbRoot .mb-synced{font-size:10px;color:var(--sub);text-align:center;padding:11px 0;cursor:pointer}
+#mbRoot .mb-synced:hover{color:var(--ink)}
+#mbRoot .mb-synced.mb-clickable{color:var(--accent);font-weight:600}
+#mbRoot .mb-synced.mb-clickable:hover{color:var(--accent)}
 </style>
 
 </head>
@@ -653,7 +662,7 @@ body.menubar-mode #mbRoot{display:block}
       <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off">
       <p id="connectErr" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></p>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Cancel</button>
+        <button class="btn btn-ghost" id="syncCancelBtn">Cancel</button>
         <button class="btn btn-use" id="connectBtn">Connect</button>
       </div>
     </div>
@@ -684,7 +693,8 @@ body.menubar-mode #mbRoot{display:block}
       </div>
 
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="document.getElementById('syncModalBg').classList.remove('open')">Close</button>
+        <button class="btn btn-ghost" onclick="closeSyncModal()">Close</button>
+        <button class="btn btn-ghost" id="changeTokenBtn">Change token</button>
         <button class="btn" style="color:var(--danger);border:1px solid var(--line)" id="disconnectBtn">Disconnect this device</button>
       </div>
     </div>
@@ -1470,37 +1480,50 @@ async function setup() {
       if (el) { el.className = el.className.replace(/\b(synced|syncing|pending|error)\b/g,''); el.classList.add(s); }
     });
     if (syncTxt) syncTxt.textContent = LABELS[s] || s;
-    const connected = s !== 'offline';
-    const nc = document.getElementById('syncNotConnected');
-    const cn = document.getElementById('syncConnected');
-    if (nc) nc.style.display = connected ? 'none' : '';
-    if (cn) cn.style.display = connected ? '' : 'none';
   });
 
+  // Show the connected/not-connected half of the modal that matches reality —
+  // called on every open so a leftover "change token" view never lingers.
+  window.syncModalDisplay = function syncModalDisplay() {
+    const connected = State.hasPAT();
+    document.getElementById('syncNotConnected').style.display = connected ? 'none' : '';
+    document.getElementById('syncConnected').style.display = connected ? '' : 'none';
+    document.getElementById('connectErr').style.display = 'none';
+  };
   document.getElementById('syncBtn').addEventListener('click', () => {
+    syncModalDisplay();
     document.getElementById('syncModalBg').classList.add('open');
+    mbModalResize();
   });
   document.getElementById('syncModalBg').addEventListener('click', e => {
-    if (e.target === document.getElementById('syncModalBg'))
-      document.getElementById('syncModalBg').classList.remove('open');
+    if (e.target === document.getElementById('syncModalBg')) closeSyncModal();
+  });
+  document.getElementById('syncCancelBtn').addEventListener('click', () => closeSyncModal());
+  document.getElementById('changeTokenBtn').addEventListener('click', () => {
+    document.getElementById('syncConnected').style.display = 'none';
+    document.getElementById('syncNotConnected').style.display = '';
+    document.getElementById('patInput').focus();
+    mbModalResize();
   });
   document.getElementById('connectBtn').addEventListener('click', async () => {
     const token = document.getElementById('patInput').value.trim();
     const err = document.getElementById('connectErr');
-    if (!token) { err.textContent = 'Please enter a token.'; err.style.display = ''; return; }
+    if (!token) { err.textContent = 'Please enter a token.'; err.style.display = ''; mbModalResize(); return; }
     err.style.display = 'none';
     document.getElementById('connectBtn').textContent = 'Connecting…';
     document.getElementById('connectBtn').disabled = true;
     const res = await State.connect(token);
     document.getElementById('connectBtn').textContent = 'Connect';
     document.getElementById('connectBtn').disabled = false;
-    if (!res.ok) { err.textContent = 'Could not connect: ' + res.err; err.style.display = ''; }
-    else { document.getElementById('patInput').value = ''; applyStateToUI(); updateCalendarUI(); }
+    if (!res.ok) { err.textContent = 'Could not connect: ' + res.err; err.style.display = ''; mbModalResize(); }
+    else { document.getElementById('patInput').value = ''; applyStateToUI(); updateCalendarUI(); syncModalDisplay(); mbModalResize(); }
   });
   document.getElementById('disconnectBtn').addEventListener('click', () => {
     if (!confirm("Disconnect this device? Your local data stays, but changes won't sync until you reconnect.")) return;
     State.disconnect();
     updateCalendarUI();
+    syncModalDisplay();
+    mbModalResize();
   });
 
   // Register ICS generator so every Gist push also writes stride-calendar.ics
@@ -1777,6 +1800,13 @@ function goToWeek(target, dir) {
 }
 
 let _pressTimer=null, _dragRow=null, _dragStartY=0, _dragStartX=0;
+let _dragGhost=null, _dragOffX=0, _dragOffY=0, _dragRowH=0;
+function mbLvClearGhost(){
+  if(_dragGhost){ _dragGhost.remove(); _dragGhost=null; }
+  if(_dragRow){ _dragRow.classList.remove('lv-source','lv-lifted'); }
+  document.querySelectorAll('.lv-day-row.lv-drop-target').forEach(x=>x.classList.remove('lv-drop-target'));
+  _dragRow=null;
+}
 
 function setupLvSwipe() {
   const lv=document.getElementById('listView'); if(!lv) return;
@@ -1801,12 +1831,23 @@ function setupLvSwipe() {
       else if(dx<0&&listWeekIdx<planData.weeks.length-1) goToWeek(listWeekIdx+1,1);
     },{passive:true});
 
-    // Long-press a day row to lift & drag-swap
+    // Long-press a day row to lift & drag-swap. We keep the touch mechanism (native
+    // HTML5 drag-and-drop doesn't fire from touch on iOS), but mirror the tile view's
+    // "lift and move" feel by floating a ghost clone that tracks the finger.
     days.querySelectorAll('.lv-day-row').forEach(row => {
       row.addEventListener('touchstart',e=>{
         _dragStartX=e.touches[0].clientX; _dragStartY=e.touches[0].clientY;
         _pressTimer=setTimeout(()=>{
-          _dragRow=row; row.classList.add('lv-lifted');
+          _dragRow=row;
+          const r=row.getBoundingClientRect();
+          _dragRowH=r.height; _dragOffX=_dragStartX-r.left; _dragOffY=_dragStartY-r.top;
+          // Floating clone follows the finger; the real row stays as a dimmed placeholder.
+          _dragGhost=row.cloneNode(true);
+          _dragGhost.classList.add('lv-ghost'); _dragGhost.classList.remove('lv-lifted');
+          _dragGhost.style.width=r.width+'px'; _dragGhost.style.height=r.height+'px';
+          _dragGhost.style.left=r.left+'px'; _dragGhost.style.top=r.top+'px';
+          document.body.appendChild(_dragGhost);
+          row.classList.add('lv-source');
           if(navigator.vibrate) navigator.vibrate(15);
         },350);
       },{passive:true});
@@ -1818,13 +1859,14 @@ function setupLvSwipe() {
         }
         e.preventDefault();
         const t=e.touches[0];
+        if(_dragGhost){ _dragGhost.style.left=(t.clientX-_dragOffX)+'px'; _dragGhost.style.top=(t.clientY-_dragOffY)+'px'; }
         const over=document.elementsFromPoint(t.clientX,t.clientY).find(el=>el.classList&&el.classList.contains('lv-day-row')&&el!==_dragRow);
         days.querySelectorAll('.lv-drop-target').forEach(x=>x.classList.remove('lv-drop-target'));
         if(over) over.classList.add('lv-drop-target');
       },{passive:false});
       row.addEventListener('touchend',e=>{
         clearTimeout(_pressTimer);
-        if(!_dragRow) return;
+        if(!_dragRow){ mbLvClearGhost(); return; }
         const t=e.changedTouches[0];
         const over=document.elementsFromPoint(t.clientX,t.clientY).find(el=>el.classList&&el.classList.contains('lv-day-row')&&el!==_dragRow);
         if(over){
@@ -1839,11 +1881,10 @@ function setupLvSwipe() {
           [da.noteKm,db.noteKm]=[db.noteKm,da.noteKm];
           schedulePlanSave();
         }
-        _dragRow.classList.remove('lv-lifted');
-        days.querySelectorAll('.lv-drop-target').forEach(x=>x.classList.remove('lv-drop-target'));
-        _dragRow=null;
+        mbLvClearGhost();
         renderListView();
       });
+      row.addEventListener('touchcancel',()=>{ clearTimeout(_pressTimer); mbLvClearGhost(); },{passive:true});
     });
   }
 
@@ -2030,7 +2071,7 @@ function mbToggleGear(){ const m=document.getElementById('mbGearMenu'), g=docume
 // ── sync + status + connect (reuse the app's State + sync modal) ──
 function mbStatus(s){ if(s==='synced') mbLastSync=Date.now(); mbPaintStatus(); }
 function mbPaintStatus(){ const el=document.getElementById('mbSynced'); if(!el) return;
-  const s=State.status(); el.classList.remove('mb-clickable');
+  const s=State.status(); el.classList.remove('mb-clickable'); el.title='Sync settings';
   if(s==='offline'){ el.textContent='Not connected \u2014 tap to connect'; el.classList.add('mb-clickable'); return; }
   if(s==='syncing'){ el.textContent='Syncing\u2026'; return; }
   if(s==='error'){ el.textContent='Sync error \u2014 tap to retry'; el.classList.add('mb-clickable'); return; }
@@ -2041,13 +2082,34 @@ function mbDoSync(){ const btn=document.getElementById('mbSync');
   if(!State.hasPAT()){ mbOpenConnect(); return; }
   mbNative('sync');
   Promise.resolve(State.init()).then(()=>{ if(typeof applyStateToUI==='function') applyStateToUI(); }).catch(()=>{}); }
-function mbOpenConnect(){ const m=document.getElementById('syncModalBg'); if(m) m.classList.add('open'); }
+function mbOpenConnect(){ const m=document.getElementById('syncModalBg'); if(!m) return;
+  if(typeof syncModalDisplay==='function') syncModalDisplay();
+  m.classList.add('open'); mbModalResize(); }
 function mbOpenApp(){ if(MB_NATIVE) mbNative('openApp'); else window.open(location.origin+location.pathname,'_blank'); }
 
 function mbUpdateStrip(t){ const rest=!t||mbBucket(t)==='rest'||!t.dist;
   mbNative('setStatusTitle',{ title: rest?'':(mbDist(t)+(mbUnit(t)?' '+mbUnit(t):'')), rest }); }
 function mbSyncSize(){ requestAnimationFrame(()=>{ const r=document.getElementById('mbRoot');
   if(r) mbNative('resize',{ w:Math.ceil(r.offsetWidth), h:Math.ceil(r.offsetHeight) }); }); }
+
+// ── connect modal: grow/shrink the popover to fit it (avoids clipped content) ──
+function closeSyncModal(){ document.getElementById('syncModalBg').classList.remove('open'); mbModalResize(); }
+function mbModalResize(){
+  if(!window.MENUBAR) return;
+  const bg=document.getElementById('syncModalBg'); if(!bg) return;
+  if(bg.classList.contains('open')){
+    requestAnimationFrame(()=>{
+      const modal=bg.querySelector('.modal'); if(!modal) return;
+      const availW=(window.screen&&window.screen.availWidth)||520;
+      const availH=(window.screen&&window.screen.availHeight)||800;
+      const w=Math.min(Math.ceil(modal.offsetWidth)+40, Math.floor(availW*0.9));
+      const h=Math.min(Math.ceil(modal.scrollHeight)+48, Math.floor(availH*0.85));
+      mbNative('resize',{ w:Math.max(w,336), h:Math.max(h,240) });
+    });
+  } else {
+    mbSyncSize(); // revert to the compact view's natural size
+  }
+}
 
 // ── build the popover DOM once ──
 function mbBuildDom(){
@@ -2084,7 +2146,7 @@ function mbBuildDom(){
   document.getElementById('mbSwitcher').addEventListener('click',()=>document.getElementById('mbRaceDrop').classList.toggle('mb-show'));
   document.getElementById('mbOpen').addEventListener('click', mbOpenApp);
   document.getElementById('mbSync').addEventListener('click', mbDoSync);
-  document.getElementById('mbSynced').addEventListener('click', e=>{ if(e.currentTarget.classList.contains('mb-clickable')) mbOpenConnect(); });
+  document.getElementById('mbSynced').addEventListener('click', mbOpenConnect);
   root.querySelectorAll('.mb-gmopt').forEach(o=>o.addEventListener('click',()=>mbSetView(o.dataset.v)));
 }
 
