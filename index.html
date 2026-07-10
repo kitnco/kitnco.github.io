@@ -1153,12 +1153,6 @@ function setUnit(u) {
   render();
 }
 
-function loadPlan(key) {
-  currentPlanKey = key;
-  planData = clone(PLANS[key]());
-  render();
-}
-
 // ─────────────────────────────────────────────────────────────
 // ICAL EXPORT
 // ─────────────────────────────────────────────────────────────
@@ -1308,6 +1302,35 @@ function createNewRace() {
 }
 
 // Load the active race from state into all UI controls + re-render
+// Build the Plan dropdown from Library favorites. Always include the current race's
+// plan (even if not favorited) so the control reflects the real active plan; a leading
+// hint option shows when there are no favorites yet.
+function refreshPlanDropdown() {
+  const sel = document.getElementById('planSelect');
+  if (!sel) return;
+  const favs = State.get('library.favorites') || [];
+  const race = getRace() || {};
+  const curId = race.planId || '';
+  const curName = race.baseMeta?.name || PLAN_LABELS[curId] || curId || 'Current plan';
+  sel.innerHTML = '';
+  if (!favs.length) {
+    const o = document.createElement('option');
+    o.value = ''; o.textContent = 'No favorites yet — star plans in Library';
+    o.disabled = true; sel.appendChild(o);
+  }
+  const seen = new Set();
+  favs.forEach(f => {
+    const o = document.createElement('option'); o.value = f.id; o.textContent = f.name;
+    sel.appendChild(o); seen.add(f.id);
+  });
+  // Ensure the active plan is selectable even if it isn't a favorite.
+  if (curId && !seen.has(curId)) {
+    const o = document.createElement('option'); o.value = curId;
+    o.textContent = curName + ' (current)'; sel.appendChild(o);
+  }
+  sel.value = curId || '';
+}
+
 function loadRaceIntoUI() {
   const race = getRace() || {};
 
@@ -1319,7 +1342,7 @@ function loadRaceIntoUI() {
   const hasBuiltIn = planId && PLANS[planId];
   const hasExternal = race.baseSchedule && race.baseSchedule.length;
   currentPlanKey = hasBuiltIn ? planId : Object.keys(PLANS)[0];
-  document.getElementById('planSelect').value = currentPlanKey;
+  refreshPlanDropdown();  // reflects the active plan (favorite or not)
 
   // Race date
   if (race.raceDate) raceDate = race.raceDate;
@@ -1344,9 +1367,9 @@ function loadRaceIntoUI() {
     planData = JSON.parse(JSON.stringify(PLANS[currentPlanKey]()));
   }
 
-  // Restore tile edits
+  // Restore tile edits (only when they belong to the plan currently loaded)
   const edits = race.edits?.weeks;
-  const editsMatch = race.planId === currentPlanKey || (hasExternal && race.planId === planId);
+  const editsMatch = (hasBuiltIn && race.planId === planId) || (hasExternal && race.planId === planId);
   if (editsMatch && edits?.length && edits.length === planData.weeks.length) {
     planData.weeks = edits;
   }
@@ -1388,18 +1411,36 @@ async function setup() {
   // ── Set active race ───────────────────────────────────────────────────────
   activeRaceId = State.get('activeRaceId') || Object.keys(State.get('races'))[0];
 
-  // ── Wire up plan selector ─────────────────────────────────────────────────
+  // ── Wire up plan selector (populated from Library favorites) ──────────────
   const sel = document.getElementById('planSelect');
-  Object.entries(PLAN_LABELS).forEach(([k,v]) => {
-    const o = document.createElement('option'); o.value=k; o.textContent=v;
-    sel.appendChild(o);
-  });
+  refreshPlanDropdown();
   sel.addEventListener('change', e => {
-    const key = e.target.value;
-    setRace('planId', key);
+    const favId = e.target.value;
+    const race = getRace() || {};
+    // No-op if they re-picked the plan already in use — revert & bail (immutable
+    // unless a genuine, confirmed switch).
+    const currentId = race.planId || '';
+    if (favId === currentId || favId === '') { sel.value = currentId; return; }
+    const fav = (State.get('library.favorites') || []).find(f => f.id === favId);
+    if (!fav) { sel.value = currentId; return; }
+    // Confirm before destroying this race's customizations.
+    const hasEdits = (race.edits?.weeks || []).length > 0;
+    const warn = hasEdits
+      ? `Switch this race to "${fav.name}"? Your customizations for the current plan will be discarded.`
+      : `Switch this race to "${fav.name}"?`;
+    if (!window.confirm(warn)) { sel.value = currentId; return; }
+    // Apply: bind the favorite's plan to the active race (built-in → planId, else its sched).
+    if (PLANS[fav.id]) {
+      setRace('planId', fav.id);
+      setRace('baseSchedule', null);
+      setRace('baseMeta', null);
+    } else {
+      setRace('planId', fav.id);
+      setRace('baseMeta', { name:fav.name, type:fav.type, units:fav.units||'mi' });
+      setRace('baseSchedule', fav.sched || null);
+    }
     setRace('edits', { weeks:[] });
-    setRace('baseSchedule', null);
-    loadPlan(key);
+    loadRaceIntoUI();
   });
 
   // ── Race date ─────────────────────────────────────────────────────────────

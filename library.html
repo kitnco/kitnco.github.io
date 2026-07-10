@@ -169,6 +169,11 @@ body.dark .filter-pill.on{color:#0B1410;}
 
 .plan-name-col{}
 .plan-name{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.fav-star{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:7px;width:22px;height:22px;border:none;background:none;padding:0;cursor:pointer;color:var(--sub);border-radius:5px;transition:color .12s,transform .1s;}
+.fav-star:hover{color:var(--accent);background:var(--row-hover);}
+.fav-star:active{transform:scale(.85);}
+.fav-star.on{color:var(--accent);}
+.fav-star svg{width:15px;height:15px;display:block;}
 .plan-sub{font-size:12px;font-weight:600;color:var(--accent);}
 .active-badge{
   display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;
@@ -211,7 +216,8 @@ body.dark .btn-use{color:#0B1410;}
 .detail-section{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--sub);margin:18px 0 8px;}
 
 /* Bar chart */
-.chart-svg{width:100%;max-width:300px;height:auto;overflow:visible;display:block;}
+.chart-svg{width:100%;height:auto;overflow:visible;display:block;}
+.chart-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .chart-svg .gridline{stroke:var(--line);stroke-width:1;}
 .chart-svg .axis-label{font-size:9.5px;fill:var(--sub);font-family:inherit;}
 .chart-svg .x-label{font-size:9.5px;fill:var(--sub);font-family:inherit;text-anchor:middle;}
@@ -569,6 +575,30 @@ let authorOrder = null;
 let draggedAuthor = null;
 let pendingPlan = null;
 
+// ── FAVORITES ────────────────────────────────────────────────
+// Starred plans surface in the Calendar page's Plan dropdown. We store a light
+// record per favorite — including its sched — so the Calendar can rebuild the plan
+// standalone (it only hardcodes 3 built-ins) via the same baseSchedule path.
+let favorites = [];  // [{id,name,type,units,weeks,sched}]
+function isFav(id){ return favorites.some(f=>f.id===id); }
+function saveFavorites(){ State.set('library.favorites', favorites); }
+function toggleFav(plan){
+  const i = favorites.findIndex(f=>f.id===plan.id);
+  if (i>=0) { favorites.splice(i,1); showToast(`"${plan.name}" removed from favorites`); }
+  else {
+    favorites.push({ id:plan.id, name:plan.name, type:plan.type||'Race',
+      units:plan.units||'mi', weeks:plan.weeks||(plan.sched?plan.sched.length:0),
+      sched:plan.sched||null });
+    showToast(`"${plan.name}" favorited — now in the Calendar plan menu`);
+  }
+  saveFavorites();
+}
+function favStarSVG(on){
+  return on
+    ? `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><polygon points="12,2.5 15,9 22,9.7 16.7,14.3 18.3,21 12,17.3 5.7,21 7.3,14.3 2,9.7 9,9"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><polygon points="12,2.5 15,9 22,9.7 16.7,14.3 18.3,21 12,17.3 5.7,21 7.3,14.3 2,9.7 9,9"/></svg>`;
+}
+
 // ── HELPERS ──────────────────────────────────────────────────
 function planSubtitle(plan) {
   const n = plan.name.toLowerCase(), p = plan.peakMiles;
@@ -618,12 +648,16 @@ function niceMax(v) {
 function buildBarChart(plan) {
   const weekly = plan.weeklyMileage || [];
   if (!weekly.length) return '';
-  const w=600, h=148, padL=32, padR=8, padT=14, padB=20;
-  const plotW=w-padL-padR, plotH=h-padT-padB;
-  const top = niceMax(Math.max(...weekly,1));
   const n = weekly.length;
+  // Fixed slot width per week so bar thickness stays constant regardless of how many
+  // weeks the plan has — an 18-week plan is simply a wider chart, not thinner bars.
+  const SLOT = 30, padL=34, padR=10, padT=16, padB=22;
+  const plotW = SLOT*n;
+  const w = padL + plotW + padR, h = 168;
+  const plotH = h-padT-padB;
+  const top = niceMax(Math.max(...weekly,1));
   const taperStart = Math.max(0, n - Math.max(2, Math.round(n*0.15)));
-  const slotW = plotW/n, barW = Math.max(2, slotW*0.62);
+  const slotW = plotW/n, barW = Math.max(6, Math.min(20, slotW*0.6));
   const xFor = i => padL + i*slotW + slotW/2;
   const yFor = v => padT + plotH - (v/top)*plotH;
 
@@ -642,12 +676,13 @@ function buildBarChart(plan) {
     labels += `<text class="value-label ${inside?'inside':'outside'}" x="${cx}" y="${ly}">${Math.round(v)}</text>`;
   });
 
-  const lStep = Math.max(1, Math.round((n-1)/Math.min(n,n<=8?n:6)));
+  // Label every week when there's room, else thin out to keep them legible.
+  const lStep = SLOT >= 22 ? 1 : Math.max(1, Math.round((n-1)/Math.min(n,6)));
   let xLabels = '';
-  for(let i=0;i<n;i+=lStep) xLabels += `<text class="x-label" x="${xFor(i)}" y="${h-2}">${i+1}</text>`;
-  if((n-1)%lStep!==0) xLabels += `<text class="x-label" x="${xFor(n-1)}" y="${h-2}">${n}</text>`;
+  for(let i=0;i<n;i+=lStep) xLabels += `<text class="x-label" x="${xFor(i)}" y="${h-4}">${i+1}</text>`;
+  if((n-1)%lStep!==0) xLabels += `<text class="x-label" x="${xFor(n-1)}" y="${h-4}">${n}</text>`;
 
-  return `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" >${gridlines}${bars}${labels}${xLabels}</svg>`;
+  return `<div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 ${w} ${h}" style="min-width:${Math.round(w*0.62)}px">${gridlines}${bars}${labels}${xLabels}</svg></div>`;
 }
 
 function buildSchedulePreview(plan) {
@@ -800,9 +835,16 @@ function buildPlanRow(plan, isActive) {
   const row = document.createElement('div');
   row.className = 'plan-row' + (isActive?' active-plan':'') + (plan.id===expandedId?' expanded':'');
 
-  // Name + subtitle
+  // Name + subtitle + favorite star
   const nameCol = document.createElement('div'); nameCol.className='plan-name-col';
-  nameCol.innerHTML = `<div class="plan-name">${plan.name}${isActive?'<span class="active-badge">Active</span>':''}</div><div class="plan-sub">${planSubtitle(plan)}</div>`;
+  nameCol.innerHTML = `<div class="plan-name">${plan.name}${isActive?'<span class="active-badge">Active</span>':''}<button class="fav-star${isFav(plan.id)?' on':''}" title="Favorite (adds to Calendar plan menu)" aria-label="Toggle favorite">${favStarSVG(isFav(plan.id))}</button></div><div class="plan-sub">${planSubtitle(plan)}</div>`;
+  const star = nameCol.querySelector('.fav-star');
+  star.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleFav(plan);
+    star.classList.toggle('on', isFav(plan.id));
+    star.innerHTML = favStarSVG(isFav(plan.id));
+  });
 
   // Stats
   const mkStat = (label, val) => {
@@ -1019,6 +1061,9 @@ function showToast(msg){
   // Restore author order
   const savedOrder = State.get('library.authorOrder');
   if (savedOrder && savedOrder.length) authorOrder = savedOrder;
+
+  // Restore favorites
+  favorites = State.get('library.favorites') || [];
 
   render();
 
