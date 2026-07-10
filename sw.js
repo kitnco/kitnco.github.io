@@ -1,4 +1,4 @@
-const CACHE = 'runkit-v26';
+const CACHE = 'runkit-v27';
 const ASSETS = [
   './', './index.html', './library.html',
   './state.js', './plans.json',

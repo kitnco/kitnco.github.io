@@ -1425,10 +1425,9 @@ async function setup() {
     if (!fav) { sel.value = currentId; return; }
     // Confirm before destroying this race's customizations.
     const hasEdits = (race.edits?.weeks || []).length > 0;
-    const curName = race.baseMeta?.name || PLAN_LABELS[currentId] || currentId || 'the current plan';
     const warn = hasEdits
-      ? `Switch this race to "${fav.name}"?\n\n⚠️ All of your changes to "${curName}" — every edited day and reordered workout — will be permanently deleted. This can't be undone.`
-      : `Switch this race to "${fav.name}"?\n\nThis replaces "${curName}" for this race.`;
+      ? `Switch this race to "${fav.name}"? All edits to the current plan will be lost.`
+      : `Switch this race to "${fav.name}"?`;
     if (!window.confirm(warn)) { sel.value = currentId; return; }
     // Apply: bind the favorite's plan to the active race (built-in → planId, else its sched).
     if (PLANS[fav.id]) {
