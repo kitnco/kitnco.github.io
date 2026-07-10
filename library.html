@@ -217,7 +217,7 @@ body.dark .btn-use{color:#0B1410;}
 
 /* Bar chart */
 .chart-svg{width:100%;height:auto;overflow:visible;display:block;}
-.chart-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .chart-svg .gridline{stroke:var(--line);stroke-width:1;}
 .chart-svg .axis-label{font-size:9.5px;fill:var(--sub);font-family:inherit;}
 .chart-svg .x-label{font-size:9.5px;fill:var(--sub);font-family:inherit;text-anchor:middle;}
@@ -651,10 +651,13 @@ function buildBarChart(plan) {
   const n = weekly.length;
   // Fixed slot width per week so bar thickness stays constant regardless of how many
   // weeks the plan has — an 18-week plan is simply a wider chart, not thinner bars.
+  // Height tracks width (capped) so short plans stay compact instead of tall squares.
   const SLOT = 30, padL=34, padR=10, padT=16, padB=22;
   const plotW = SLOT*n;
-  const w = padL + plotW + padR, h = 168;
-  const plotH = h-padT-padB;
+  const w = padL + plotW + padR;
+  // Plot area keeps ~0.42 aspect vs its width, clamped so it's neither cramped nor a square.
+  const plotH = Math.round(Math.max(70, Math.min(130, plotW*0.42)));
+  const h = plotH + padT + padB;
   const top = niceMax(Math.max(...weekly,1));
   const taperStart = Math.max(0, n - Math.max(2, Math.round(n*0.15)));
   const slotW = plotW/n, barW = Math.max(6, Math.min(20, slotW*0.6));
@@ -682,7 +685,7 @@ function buildBarChart(plan) {
   for(let i=0;i<n;i+=lStep) xLabels += `<text class="x-label" x="${xFor(i)}" y="${h-4}">${i+1}</text>`;
   if((n-1)%lStep!==0) xLabels += `<text class="x-label" x="${xFor(n-1)}" y="${h-4}">${n}</text>`;
 
-  return `<div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 ${w} ${h}" style="min-width:${Math.round(w*0.62)}px">${gridlines}${bars}${labels}${xLabels}</svg></div>`;
+  return `<div class="chart-wrap" style="max-width:${w}px"><svg class="chart-svg" viewBox="0 0 ${w} ${h}">${gridlines}${bars}${labels}${xLabels}</svg></div>`;
 }
 
 function buildSchedulePreview(plan) {
