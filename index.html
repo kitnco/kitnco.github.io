@@ -2067,7 +2067,7 @@ function mbRender(){
       `<div class="mb-tilenote">${mbEsc(d.note||'')}</div>`;
     mbWireSwap(tile,cwi); w2.appendChild(tile); });
 
-  mbUpdateStrip(t);
+  mbUpdateStrip(t, todayIdx>=0);
   mbSyncSize();
 }
 
@@ -2128,8 +2128,8 @@ function mbOpenConnect(){ const m=document.getElementById('syncModalBg'); if(!m)
   m.classList.add('open'); mbModalResize(); }
 function mbOpenApp(){ if(MB_NATIVE) mbNative('openApp'); else window.open(location.origin+location.pathname,'_blank'); }
 
-function mbUpdateStrip(t){ const rest=!t||mbBucket(t)==='rest'||!t.dist;
-  mbNative('setStatusTitle',{ title: rest?'':(mbDist(t)+(mbUnit(t)?' '+mbUnit(t):'')), rest }); }
+function mbUpdateStrip(t,isToday){ const rest=!isToday||!t||mbBucket(t)==='rest'||!t.dist;
+  mbNative('setStatusTitle',{ title: rest?'—':(mbDist(t)+(mbUnit(t)?' '+mbUnit(t):'')), rest:false }); }
 function mbSyncSize(){ requestAnimationFrame(()=>{ const r=document.getElementById('mbRoot');
   if(r) mbNative('resize',{ w:Math.ceil(r.offsetWidth), h:Math.ceil(r.offsetHeight) }); }); }
 
